@@ -6,7 +6,7 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app import create_app
-from app.log_monitor import LogMonitorService
+from app.log_monitor import LogMonitorService, log_sort_key
 from app.models import LapLive, Races, WeekEnds
 
 LINE_TRACK = "Track spa was set and updated\n"
@@ -113,6 +113,20 @@ def test_consecutive_weekend_resets_reuse_empty_weekend(env):
         assert WeekEnds.query.count() == 2
         races = Races.query.order_by(Races.id).all()
         assert [r.we_id for r in races] == [1, 2]
+
+
+def test_archived_files_sorted_by_embedded_date(tmp_path):
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir()
+    for name in ("zz-logs_20260910_183152_1.log", "aa-logs_20260812_165000_1.log",
+                 "mm-logs_20260824_181416_1.log"):
+        (logs_dir / name).write_text("", encoding="utf-8")
+    files = sorted((p.name for p in logs_dir.iterdir()), key=log_sort_key)
+    assert files == [
+        "aa-logs_20260812_165000_1.log",
+        "mm-logs_20260824_181416_1.log",
+        "zz-logs_20260910_183152_1.log",
+    ]
 
 
 def test_restart_does_not_create_empty_weekend(env):

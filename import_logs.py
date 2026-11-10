@@ -14,7 +14,7 @@ import os
 import sys
 
 from app import create_app
-from app.log_monitor import LogMonitorService
+from app.log_monitor import LogMonitorService, log_sort_key
 from app.models import Drivers, LapLive, Races, WeekEnds
 
 
@@ -24,7 +24,7 @@ def main():
     parser.add_argument("--pattern", default="*.log", help="pattern des fichiers (défaut: *.log)")
     args = parser.parse_args()
 
-    files = sorted(glob.glob(os.path.join(args.logs_dir, args.pattern)))
+    files = sorted(glob.glob(os.path.join(args.logs_dir, args.pattern)), key=log_sort_key)
     if not files:
         print(f"Aucun fichier trouvé dans {args.logs_dir} avec le pattern {args.pattern}")
         return 1

@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+import re
 import threading
 import time
 
@@ -13,6 +14,16 @@ from .parser import (
     parse_session_change,
     parse_track_line,
 )
+
+
+LOG_NAME_TS = re.compile(r"logs_(\d{8})_(\d{6})")
+
+
+def log_sort_key(path):
+    """Tri chronologique des logs archivés via la date embarquée dans le nom
+    (logs_YYYYMMDD_HHMMSS_*.log), sinon ordre alphabétique."""
+    m = LOG_NAME_TS.search(os.path.basename(path))
+    return (m.group(1) + m.group(2)) if m else os.path.basename(path)
 
 
 class LogMonitorService(threading.Thread):
@@ -89,7 +100,7 @@ class LogMonitorService(threading.Thread):
         """Retourne les logs archivés du serveur (logs_*.log), triés par nom."""
         if not self.logs_dir or not os.path.isdir(self.logs_dir):
             return []
-        return sorted(glob.glob(os.path.join(self.logs_dir, "logs_*.log")))
+        return sorted(glob.glob(os.path.join(self.logs_dir, "logs_*.log")), key=log_sort_key)
 
     def replay_archived_logs(self):
         """Rejoue les logs archivés (au démarrage ou nouveaux fichiers)."""
