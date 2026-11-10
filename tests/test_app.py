@@ -86,6 +86,13 @@ def test_race_detail_and_driver_pages(client, app):
     assert client.get("/race/9999").status_code == 404
 
 
+def test_race_detail_shows_formatted_times(client, app):
+    with app.app_context():
+        race_id = Races.query.order_by(Races.id.desc()).first().id
+    html = client.get(f"/race/{race_id}").get_data(as_text=True)
+    assert "1:36:100" in html  # 96100 ms au format m:ss:mmm
+
+
 def test_new_time_print_shows_sector(app, tmp_path, capsys):
     log_path = tmp_path / "server.log"
     log_path.write_text(

@@ -34,8 +34,19 @@ def create_app(config_object=None, start_monitor=False):
     return app
 
 
+def ms_to_time(ms):
+    """Formate des millisecondes en 'm:ss:mmm' (ex 95791 -> '1:35:791')."""
+    if ms is None:
+        return "-"
+    minutes, rem = divmod(int(ms), 60_000)
+    seconds, millis = divmod(rem, 1_000)
+    return f"{minutes}:{seconds:02d}:{millis:03d}"
+
+
 def register_routes(app):
     from .models import Drivers, LapLive, Races, Server
+
+    app.add_template_filter(ms_to_time, "ms_to_time")
 
     @app.route("/")
     def index():
