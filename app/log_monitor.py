@@ -152,6 +152,12 @@ class LogMonitorService(threading.Thread):
 
     def commit_new_weekend(self):
         with self.app.app_context():
+            last = WeekEnds.query.order_by(WeekEnds.id.desc()).first()
+            if last is not None and not last.races_id:
+                # reset(s) consécutifs (ou redémarrage de l'appli) sans aucune
+                # course entre-temps: on réutilise le week-end courant
+                print(f"Week-end courant #{last.id} réutilisé (aucune course enregistrée)")
+                return last.id
             we = WeekEnds(races_id=[])
             db.session.add(we)
             db.session.commit()

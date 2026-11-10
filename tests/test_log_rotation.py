@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from app import create_app
 from app.log_monitor import LogMonitorService
-from app.models import LapLive, Races
+from app.models import LapLive, Races, WeekEnds
 
 LINE_TRACK = "Track spa was set and updated\n"
 LINE_LAP = ("Lap carId 5, driverId 1, lapTime 1:35:791, timestampMS 35791.000000, "
@@ -93,6 +93,26 @@ def test_archived_logs_are_replayed(env):
         # rejouer ne duplique rien (offset persisté)
         m.replay_archived_logs()
         assert LapLive.query.count() == 1
+
+
+def test_consecutive_weekend_resets_reuse_empty_weekend(env):
+    app, log, logs_dir, tmp_path = env
+    log.write_text(
+        "Resetting race weekend\n"
+        "Resetting race weekend\n"
+        "Session changed: Practice -> Practice 0\n"
+        "Resetting race weekend\n"
+        "Session changed: Practice -> Qualifying 0\n",
+        encoding="utf-8",
+    )
+    m = make_monitor(app, log, tmp_path)
+    with app.app_context():
+        m.tail_file(str(log))
+        # 2 resets consécutifs -> même week-end (le n°1, créé à l'init);
+        # le reset après une course -> nouveau week-end
+        assert WeekEnds.query.count() == 2
+        races = Races.query.order_by(Races.id).all()
+        assert [r.we_id for r in races] == [1, 2]
 
 
 def test_state_persisted_across_monitor_instances(env):
