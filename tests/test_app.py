@@ -59,8 +59,11 @@ def test_log_parsing_populates_db(app):
         driver = Drivers.query.first()
         assert driver.player_id == "76561198000000000"
         assert driver.car_id == 5
-        # la ligne sentinel 35791:23:647 est ignoree
-        assert LapLive.query.count() == 3
+        # la ligne sentinel 35791:23:647 est enregistrée comme passage de secteur (lap_time NULL)
+        assert LapLive.query.count() == 4
+        splits = LapLive.query.filter(LapLive.lap_time.is_(None)).all()
+        assert len(splits) == 1
+        assert splits[0].s1 == 30000
         cut_laps = LapLive.query.filter_by(hasCut=True).all()
         assert len(cut_laps) == 1
         assert cut_laps[0].lap_time == 94500

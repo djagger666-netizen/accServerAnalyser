@@ -61,11 +61,15 @@ def test_parse_lap_line_with_flags():
     assert data2["sessionOver"] is True
 
 
-def test_parse_lap_line_invalid_time_returns_none():
-    # lignes de split (S1 seul...) avec lapTime sentinel -> ignorees
+def test_parse_lap_line_sentinel_is_sector_passage():
+    # ligne de passage de secteur : lapTime sentinel -> lap_time None, secteurs conservés
     line = ("Lap carId 1001, driverId 0, lapTime 35791:23:647, timestampMS 71676231.000000, "
             "flags: 169908633612, S1 0:55:906, fuel 0.000000, InLap , OutLap ")
-    assert parse_lap_line(line) is None
+    data = parse_lap_line(line)
+    assert data is not None
+    assert data["lap_time"] is None
+    assert data["s1"] == 55906
+    assert data["car_id"] == 1001
 
 
 def test_parse_lap_line_not_a_lap():

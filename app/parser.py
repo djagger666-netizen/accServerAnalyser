@@ -85,14 +85,17 @@ def sector_to_ms(sector):
 
 
 def parse_lap_line(line):
-    """Parse une ligne de tour. Retourne un dict ou None si ce n'est pas un tour valide."""
+    """Parse une ligne de tour ou de passage de secteur.
+
+    Retourne un dict, ou None si la ligne ne correspond pas.
+    Si lapTime est le sentinel 35791:23:647, il s'agit d'un passage de secteur
+    en cours de tour : lap_time vaut None mais les secteurs (S1/S2/S3) sont conservés.
+    """
     match = LAP_REGEX.search(line)
     if not match:
         return None
     data = match.groupdict()
     lap_time = lap_time_to_ms(data["lap_time"])
-    if lap_time is None:
-        return None
     has_cut = False
     session_over = False
     for info in (data["info1"], data["info2"], data["info3"]):

@@ -269,7 +269,8 @@ class LogMonitorService(threading.Thread):
         data = parse_lap_line(line)
         if data is None:
             return
-        print(f"      newTime: car={data['car_id']} race={self.race_id} "
+        kind = "tour" if data["lap_time"] is not None else "secteur"
+        print(f"      newTime[{kind}]: car={data['car_id']} race={self.race_id} "
               f"lap={data['lap_time']}ms cut={data['hasCut']} over={data['sessionOver']}")
         with self.app.app_context():
             driver = Drivers.query.filter_by(car_id=data["car_id"]).first()
