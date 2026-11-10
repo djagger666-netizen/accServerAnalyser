@@ -3,6 +3,13 @@ import os
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
+def _resolve(path):
+    """Résout un chemin relatif par rapport à la racine du dépôt."""
+    if not os.path.isabs(path):
+        path = os.path.join(BASE_DIR, path)
+    return os.path.normpath(path)
+
+
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev")
     SQLALCHEMY_DATABASE_URI = os.environ.get(
@@ -12,14 +19,19 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Chemin du fichier server.log du serveur ACC surveillé
-    ACC_LOG_PATH = os.environ.get(
-        "ACC_LOG_PATH",
-        os.path.join(BASE_DIR, "server_files", "log", "server.log"),
+    # (relatif = résolu depuis la racine du dépôt, ex: ..\accweb_v1.27.0\config\1786545622\log\server.log)
+    ACC_LOG_PATH = _resolve(
+        os.environ.get(
+            "ACC_LOG_PATH",
+            os.path.join("server_files", "log", "server.log"),
+        )
     )
     # Chemin de l'entrylist du serveur (correspondance numéro de course <-> pilote)
-    ENTRYLIST_PATH = os.environ.get(
-        "ENTRYLIST_PATH",
-        os.path.join(BASE_DIR, "server_files", "cfg", "entrylist.json"),
+    ENTRYLIST_PATH = _resolve(
+        os.environ.get(
+            "ENTRYLIST_PATH",
+            os.path.join("server_files", "cfg", "entrylist.json"),
+        )
     )
 
     HOST = os.environ.get("HOST", "127.0.0.1")

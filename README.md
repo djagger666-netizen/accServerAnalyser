@@ -32,8 +32,8 @@ Par variables d'environnement (voir `config.py`) :
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `ACC_LOG_PATH` | `server_files/log/server.log` | chemin du `server.log` surveillé |
-| `ENTRYLIST_PATH` | `server_files/cfg/entrylist.json` | entrylist du serveur (mapping n° de course ↔ SteamID) |
+| `ACC_LOG_PATH` | `server_files/log/server.log` | chemin du `server.log` surveillé (relatif = depuis la racine du dépôt, ex `..\accweb_v1.27.0\config\1786545622\log\server.log`) |
+| `ENTRYLIST_PATH` | `server_files/cfg/entrylist.json` | entrylist du serveur (mapping n° de course ↔ SteamID), idem pour les chemins relatifs |
 | `DATABASE_URL` | `sqlite:///instance/laps.db` | URI de la base SQLite |
 | `HOST` / `PORT` | `127.0.0.1` / `5000` | bind du serveur web |
 
