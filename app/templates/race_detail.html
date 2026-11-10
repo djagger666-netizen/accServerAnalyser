@@ -18,7 +18,7 @@
 <table>
   <tr><th>Pilote</th><th>Voiture</th><th>Tour #</th><th>Place</th><th>Temps tour</th><th>S1</th><th>S2</th><th>S3</th><th>Fuel</th><th>Cut</th></tr>
   {% for driver, lap in results %}
-  <tr>
+  <tr class="{{ 'cut-row' if lap.hasCut else '' }}">
     <td>{% if driver %}<a href="{{ url_for('driver_profile', driver_id=driver.id) }}">{{ driver.full_name() }}</a>{% else %}car {{ lap.car_id }}{% endif %}</td>
     <td>{{ lap.car_id }}</td>
     <td>{{ lap.lap_number if lap.lap_number is not none else '-' }}</td>
@@ -26,7 +26,7 @@
     <td>{{ lap.lap_time|ms_to_time }}</td>
     <td>{{ lap.s1|ms_to_time }}</td><td>{{ lap.s2|ms_to_time }}</td><td>{{ lap.s3|ms_to_time }}</td>
     <td>{{ '%.1f'|format(lap.fuel) }}</td>
-    <td class="{{ 'cut' if lap.hasCut else '' }}">{{ 'oui' if lap.hasCut else '' }}</td>
+    <td>{{ 'oui' if lap.hasCut else '' }}</td>
   </tr>
   {% endfor %}
 </table>
