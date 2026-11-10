@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 import threading
@@ -17,15 +18,22 @@ from .parser import (
 class LogMonitorService(threading.Thread):
     """Surveille le server.log d'un serveur ACC et alimente la base de données."""
 
-    def __init__(self, app, log_path, entrylist_path):
+    def __init__(self, app, log_path, entrylist_path, state_path=None):
         super().__init__()
         self.app = app
         self.log_path = log_path
         self.entrylist_path = entrylist_path
+        self.logs_dir = app.config.get("ACC_LOGS_DIR")
+        self.state_path = (
+            state_path
+            or app.config.get("MONITOR_STATE_PATH")
+            or os.path.join("instance", "monitor_state.json")
+        )
         self.daemon = True
         self.running = True
         self.car_to_driver_map = {}
-        self._last_line = 0
+        self._state = {}
+        self.load_state()
 
         self.race_id = None
         self.piste = None
@@ -62,27 +70,76 @@ class LogMonitorService(threading.Thread):
                     "short_name": driver_info.get("shortName", "??"),
                 }
 
+    def load_state(self):
+        """Charge les offsets de lecture persistés (fichier -> offset en octets)."""
+        try:
+            with open(self.state_path, "r", encoding="utf-8") as f:
+                self._state = json.load(f).get("files", {})
+        except (OSError, ValueError):
+            self._state = {}
+
+    def save_state(self):
+        os.makedirs(os.path.dirname(self.state_path) or ".", exist_ok=True)
+        tmp = self.state_path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"files": self._state}, f)
+        os.replace(tmp, self.state_path)
+
+    def archived_log_files(self):
+        """Retourne les logs archivés du serveur (logs_*.log), triés par nom."""
+        if not self.logs_dir or not os.path.isdir(self.logs_dir):
+            return []
+        return sorted(glob.glob(os.path.join(self.logs_dir, "logs_*.log")))
+
+    def replay_archived_logs(self):
+        """Rejoue les logs archivés (au démarrage ou nouveaux fichiers)."""
+        for path in self.archived_log_files():
+            self.tail_file(path)
+
     def run(self):
         try:
             self.load_mapping()
         except Exception as e:
             print(f"Entrylist illisible ({self.entrylist_path}), mapping ignoré: {e}")
+        self.replay_archived_logs()
         print(f"Monitoring active on {self.log_path}")
         while self.running:
             self.tail_file(self.log_path)
+            self.replay_archived_logs()
             time.sleep(1)
 
     def stop(self):
         self.running = False
 
     def tail_file(self, path):
-        """Lit les nouvelles lignes du fichier log depuis la dernière position connue."""
+        """Lit les nouveaux octets du fichier log depuis le dernier offset connu.
+
+        - offset persisté par fichier dans le fichier d'état (pas de relecture
+          au redémarrage de l'appli)
+        - si le fichier a rétréci (tronqué/recréé), on repart de 0
+        - une dernière ligne sans retour à la ligne est considérée comme
+          incomplète et traitée au passage suivant
+        """
         try:
-            with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                lines = f.readlines()[self._last_line:]
-            for line in lines:
-                self._last_line += 1
+            offset = int(self._state.get(path, 0))
+            with open(path, "rb") as f:
+                f.seek(0, os.SEEK_END)
+                size = f.tell()
+                if size < offset:
+                    offset = 0
+                f.seek(offset)
+                data = f.read()
+            new_offset = offset + len(data)
+            if data and not data.endswith(b"\n"):
+                idx = data.rfind(b"\n")
+                if idx == -1:
+                    return
+                data = data[:idx]
+                new_offset = offset + idx + 1
+            for line in data.decode("utf-8", errors="ignore").splitlines():
                 self.dispatch_line(line)
+            self._state[path] = new_offset
+            self.save_state()
         except Exception as e:
             print(f"Erreur lecture log {path}: {e}")
 

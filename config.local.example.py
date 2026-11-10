@@ -4,6 +4,8 @@
 
 ACC_LOG_PATH = r"..\accweb_v1.27.0\config\1786545622\log\server.log"
 ENTRYLIST_PATH = r"..\accweb_v1.27.0\config\1786545622\cfg\entrylist.json"
+# Dossier des logs archivés (défaut: le dossier "logs" à côté de "log") :
+# ACC_LOGS_DIR = r"..\accweb_v1.27.0\config\1786545622\logs"
 
 # DATABASE_URL = "sqlite:///instance/laps.db"
 # HOST = "127.0.0.1"

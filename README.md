@@ -46,6 +46,18 @@ Sinon, par variables d'environnement (voir `config.py`) :
 | `DATABASE_URL` | `sqlite:///instance/laps.db` | URI de la base SQLite |
 | `HOST` / `PORT` | `127.0.0.1` / `5000` | bind du serveur web |
 
+## Gestion des logs
+
+- `ACC_LOG_PATH` pointe vers le fichier `server.log` **courant** ; le moniteur lit
+  uniquement les nouveaux octets (offset persisté par fichier dans
+  `instance/monitor_state.json`, donc pas de relecture au redémarrage).
+- `ACC_LOGS_DIR` (défaut : le dossier `logs` à côté de `log`) contient les logs
+  archivés `logs_*.log` : ils sont rejoués au démarrage et surveillés en continu
+  (un nouveau fichier archivé est traité dès qu'il apparaît).
+- Si `server.log` est tronqué/recréé plus petit (restart du serveur), l'offset
+  repart de 0 automatiquement.
+- Une ligne écrite sans retour à la ligne final est attendue avant d'être parsée.
+
 ## Lancement
 
 ```bash

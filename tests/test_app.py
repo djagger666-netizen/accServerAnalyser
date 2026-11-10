@@ -39,7 +39,8 @@ def app(tmp_path):
 
     application = create_app(TestCfg, start_monitor=False)
     monitor = LogMonitorService(
-        application, str(log_path), str(tmp_path / "entrylist.json")
+        application, str(log_path), str(tmp_path / "entrylist.json"),
+        state_path=str(tmp_path / "monitor_state.json"),
     )
     with application.app_context():
         monitor.tail_file(str(log_path))

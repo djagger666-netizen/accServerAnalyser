@@ -47,6 +47,18 @@ class Config:
             os.path.join("server_files", "cfg", "entrylist.json"),
         )
     )
+    # Dossier contenant server.log
+    ACC_LOG_DIR = _resolve(os.environ.get("ACC_LOG_DIR", os.path.dirname(ACC_LOG_PATH)))
+    # Dossier des logs archivés par le serveur ACC (logs_YYYYMMDD_....log),
+    # par défaut le dossier "logs" à côté du dossier "log"
+    ACC_LOGS_DIR = _resolve(
+        os.environ.get("ACC_LOGS_DIR", os.path.join(os.path.dirname(ACC_LOG_DIR), "logs"))
+    )
+    # Fichier d'état du moniteur (offsets de lecture par fichier, pour ne pas
+    # relire les logs au redémarrage et suivre les fichiers archivés)
+    MONITOR_STATE_PATH = _resolve(
+        os.environ.get("MONITOR_STATE_PATH", os.path.join("instance", "monitor_state.json"))
+    )
 
     HOST = os.environ.get("HOST", "127.0.0.1")
     PORT = int(os.environ.get("PORT", "5000"))
@@ -54,8 +66,8 @@ class Config:
 
 # Surcharge locale optionnelle via config.local.py (voir config.local.example.py)
 _apply_local_overrides(Config, LOCAL_CONFIG_PATH)
-Config.ACC_LOG_PATH = _resolve(Config.ACC_LOG_PATH)
-Config.ENTRYLIST_PATH = _resolve(Config.ENTRYLIST_PATH)
+for _path_attr in ("ACC_LOG_PATH", "ENTRYLIST_PATH", "ACC_LOG_DIR", "ACC_LOGS_DIR", "MONITOR_STATE_PATH"):
+    setattr(Config, _path_attr, _resolve(getattr(Config, _path_attr)))
 
 
 class TestConfig(Config):
