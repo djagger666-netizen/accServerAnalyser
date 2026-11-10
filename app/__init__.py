@@ -58,20 +58,14 @@ def annotate_lap_numbers(laps):
 
 
 def annotate_best_laps(laps):
-    """Marque le meilleur tour (hors cut) de chaque pilote: lap.is_best = True."""
-    best = {}
-    for driver, lap in laps:
-        if lap.lap_time is None or lap.hasCut:
-            continue
-        key = lap.player_id or f"car{lap.car_id}"
-        if key not in best or lap.lap_time < best[key]:
-            best[key] = lap.lap_time
-    for driver, lap in laps:
-        key = lap.player_id or f"car{lap.car_id}"
+    """Marque LE meilleur tour de la session (hors cut): lap.is_best = True."""
+    valid = [l.lap_time for _, l in laps if l.lap_time is not None and not l.hasCut]
+    overall = min(valid) if valid else None
+    for _, lap in laps:
         lap.is_best = (
-            lap.lap_time is not None
+            overall is not None
+            and lap.lap_time == overall
             and not lap.hasCut
-            and best.get(key) == lap.lap_time
         )
     return laps
 

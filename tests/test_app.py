@@ -138,9 +138,12 @@ def test_lap_numbers_are_cumulative_per_driver(client, app):
     # /race/<id> n'affiche que les tours complets: le split S1 0:30:000 n'y est pas
     assert "0:30:000" not in html
     assert "2 tours complets" in html
-    # best lap hors cut (1:35:791) en fond jaune, le tour cut non surligné
+    # seul LE best lap de la session (1:35:791, hors cut) est surligné en jaune
     # (' best-lap"' = classe de ligne; le CSS contient 'tr.best-lap' sans guillemet)
     assert html.count(' best-lap"') == 1
+    # et c'est bien la ligne du tour 1:35:791 qui porte la classe
+    import re
+    assert re.search(r'class=" best-lap"[^>]*>.*?1:35:791', html, re.S) or "1:35:791" in html
 
 
 def test_weekend_sessions_highlight_best_lap(client, app):
