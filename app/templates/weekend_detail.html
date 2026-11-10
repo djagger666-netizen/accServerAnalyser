@@ -10,13 +10,27 @@
 {% if s.is_race %}
 {% if s.race_ranking %}
 <table>
-  <tr><th>#</th><th>Pilote</th><th>Tours</th><th>Temps total</th></tr>
-  {% for n, total, driver in s.race_ranking %}
-  <tr>
-    <td>{{ loop.index }}</td>
-    <td>{{ driver.full_name() if driver else '?' }}</td>
-    <td>{{ n }}</td>
-    <td>{{ total|ms_to_time }}</td>
+  <tr><th>#</th><th>Pilote</th><th>Voiture</th><th>Tours</th><th>Temps total</th><th>Meilleur tour</th></tr>
+  {% for r in s.race_ranking %}
+  <tr class="{{ 'best-lap-row' if r.best_lap is not none and r.best_lap == s.best_lap_overall else '' }}">
+    <td>{{ loop.index }}
+      {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% endif %}
+    </td>
+    <td>{{ r.driver.full_name() if r.driver else '?' }}</td>
+    <td>
+      {% if r.car %}
+        {% set logo = 'logos/' ~ r.car.brand|lower|replace(' ', '-') ~ '.png' %}
+        {% if logo in available_logos %}
+        <img class="car-logo" src="{{ url_for('static', filename=logo) }}" alt="{{ r.car.brand }}">
+        {% else %}
+        <span class="brand-badge" style="background: {{ r.car.color }}">{{ r.car.brand }}</span>
+        {% endif %}
+        {{ r.car.model }}
+      {% endif %}
+    </td>
+    <td>{{ r.n }}</td>
+    <td>{{ r.total|ms_to_time }}</td>
+    <td>{{ r.best_lap|ms_to_time if r.best_lap is not none else '-' }}</td>
   </tr>
   {% endfor %}
 </table>

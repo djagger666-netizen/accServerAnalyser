@@ -2,6 +2,7 @@ import os
 
 from flask import Flask, jsonify, render_template, request
 
+from .car_models import car_info
 from .extensions import db
 from . import models  # noqa: F401  (enregistre les modèles)
 
@@ -112,6 +113,7 @@ def register_routes(app):
                 if cur is None or lap.lap_time < cur[0]:
                     best[key] = (lap.lap_time, driver)
             ranking = sorted(best.values(), key=lambda b: b[0])
+            best_lap_by_key = {k: v[0] for k, v in best.items()}
             # résultat de course: plus de tours d'abord, puis moins de temps cumulé
             race_stats = {}
             for driver, lap in laps:
@@ -120,16 +122,33 @@ def register_routes(app):
                 key = lap.player_id or f"car{lap.car_id}"
                 n, total, drv = race_stats.get(key, (0, 0, driver))
                 race_stats[key] = (n + 1, total + lap.lap_time, drv)
-            race_ranking = sorted(race_stats.values(), key=lambda s: (-s[0], s[1]))
+            race_ranking = [
+                {
+                    "n": n,
+                    "total": total,
+                    "driver": drv,
+                    "best_lap": best_lap_by_key.get(key),
+                    "car": car_info(drv.car_model) if drv else None,
+                }
+                for key, (n, total, drv) in sorted(
+                    race_stats.items(), key=lambda kv: (-kv[1][0], kv[1][1])
+                )
+            ]
+            best_laps = [r["best_lap"] for r in race_ranking if r["best_lap"] is not None]
             sessions.append({
                 "race": race,
                 "laps": laps,
                 "display_laps": [(d, l) for d, l in laps if l.lap_time is not None],
                 "ranking": ranking,
                 "race_ranking": race_ranking,
+                "best_lap_overall": min(best_laps) if best_laps else None,
                 "is_race": race.race_session in ("Race", "Race Completed"),
             })
-        return render_template("weekend_detail.html", we=we, sessions=sessions)
+        logos_dir = os.path.join(app.root_path, "static", "logos")
+        available_logos = set(os.listdir(logos_dir)) if os.path.isdir(logos_dir) else set()
+        return render_template(
+            "weekend_detail.html", we=we, sessions=sessions, available_logos=available_logos
+        )
 
     @app.route("/race/<int:race_id>")
     def race_detail(race_id):

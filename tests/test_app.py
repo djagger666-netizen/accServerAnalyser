@@ -107,9 +107,12 @@ def test_weekend_page_results_and_sessions(client, app):
     assert "Résultats" in html
     assert "Qualifying" in html and "Race" in html
     assert "1:35:791" in html  # meilleur tour qualif (hors cut)
-    # résultat de course: nb de tours + temps cumulé
-    assert "Tours" in html and "Temps total" in html
+    # résultat de course: nb de tours + temps cumulé + meilleur tour + médailles + voiture
+    assert "Tours" in html and "Temps total" in html and "Meilleur tour" in html
     assert "1:36:100" in html  # 1 tour de 96100 ms en course
+    assert "🥇" in html  # médaille du vainqueur
+    assert "best-lap-row" in html  # meilleur best lap en bleu
+    assert "Aston Martin" in html and "V8 Vantage (2019)" in html  # carModel 20
     # le tour cut 94500 ms (1:34:500) ne compte pas dans les résultats:
     # il n'apparaît que dans le tableau dépliable de la session (1 fois)
     assert html.count("1:34:500") == 1
