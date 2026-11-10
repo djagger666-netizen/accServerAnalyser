@@ -7,6 +7,23 @@
 <h2>Résultats (classés par meilleur tour)</h2>
 {% for s in sessions if s.race.race_session in ('Qualifying', 'Race', 'Race Completed') %}
 <h3>{{ s.race.race_session }} — {{ s.race.piste }}</h3>
+{% if s.is_race %}
+{% if s.race_ranking %}
+<table>
+  <tr><th>#</th><th>Pilote</th><th>Tours</th><th>Temps total</th></tr>
+  {% for n, total, driver in s.race_ranking %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ driver.full_name() if driver else '?' }}</td>
+    <td>{{ n }}</td>
+    <td>{{ total|ms_to_time }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Aucun tour valide.</p>
+{% endif %}
+{% else %}
 {% if s.ranking %}
 <table>
   <tr><th>#</th><th>Pilote</th><th>Meilleur tour</th></tr>
@@ -20,6 +37,7 @@
 </table>
 {% else %}
 <p>Aucun tour valide.</p>
+{% endif %}
 {% endif %}
 {% endfor %}
 

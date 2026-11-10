@@ -99,7 +99,22 @@ def register_routes(app):
                 if cur is None or lap.lap_time < cur[0]:
                     best[key] = (lap.lap_time, driver)
             ranking = sorted(best.values(), key=lambda b: b[0])
-            sessions.append({"race": race, "laps": laps, "ranking": ranking})
+            # résultat de course: plus de tours d'abord, puis moins de temps cumulé
+            race_stats = {}
+            for driver, lap in laps:
+                if lap.lap_time is None:
+                    continue
+                key = lap.player_id or f"car{lap.car_id}"
+                n, total, drv = race_stats.get(key, (0, 0, driver))
+                race_stats[key] = (n + 1, total + lap.lap_time, drv)
+            race_ranking = sorted(race_stats.values(), key=lambda s: (-s[0], s[1]))
+            sessions.append({
+                "race": race,
+                "laps": laps,
+                "ranking": ranking,
+                "race_ranking": race_ranking,
+                "is_race": race.race_session in ("Race", "Race Completed"),
+            })
         return render_template("weekend_detail.html", we=we, sessions=sessions)
 
     @app.route("/race/<int:race_id>")
