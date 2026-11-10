@@ -57,6 +57,25 @@ def annotate_lap_numbers(laps):
     return laps
 
 
+def annotate_best_laps(laps):
+    """Marque le meilleur tour (hors cut) de chaque pilote: lap.is_best = True."""
+    best = {}
+    for driver, lap in laps:
+        if lap.lap_time is None or lap.hasCut:
+            continue
+        key = lap.player_id or f"car{lap.car_id}"
+        if key not in best or lap.lap_time < best[key]:
+            best[key] = lap.lap_time
+    for driver, lap in laps:
+        key = lap.player_id or f"car{lap.car_id}"
+        lap.is_best = (
+            lap.lap_time is not None
+            and not lap.hasCut
+            and best.get(key) == lap.lap_time
+        )
+    return laps
+
+
 def register_routes(app):
     from .models import Drivers, LapLive, Races, Server, WeekEnds
 
@@ -96,13 +115,13 @@ def register_routes(app):
         races = Races.query.filter_by(we_id=we_id).order_by(Races.id.asc()).all()
         sessions = []
         for race in races:
-            laps = annotate_lap_numbers(
+            laps = annotate_best_laps(annotate_lap_numbers(
                 db.session.query(Drivers, LapLive)
                 .outerjoin(Drivers, LapLive.player_id == Drivers.player_id)
                 .filter(LapLive.race_id == race.id)
                 .order_by(LapLive.id.asc())
                 .all()
-            )
+            ))
             best = {}
             for driver, lap in laps:
                 # résultats: on ignore les tours avec cut
@@ -153,13 +172,13 @@ def register_routes(app):
     @app.route("/race/<int:race_id>")
     def race_detail(race_id):
         race = Races.query.get_or_404(race_id)
-        results = annotate_lap_numbers(
+        results = annotate_best_laps(annotate_lap_numbers(
             db.session.query(Drivers, LapLive)
             .outerjoin(Drivers, LapLive.player_id == Drivers.player_id)
             .filter(LapLive.race_id == race_id, LapLive.lap_time.isnot(None))
             .order_by(LapLive.id.asc())
             .all()
-        )
+        ))
         return render_template("race_detail.html", race=race, results=results)
 
     @app.route("/live")

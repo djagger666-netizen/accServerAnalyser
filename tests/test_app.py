@@ -138,6 +138,14 @@ def test_lap_numbers_are_cumulative_per_driver(client, app):
     # /race/<id> n'affiche que les tours complets: le split S1 0:30:000 n'y est pas
     assert "0:30:000" not in html
     assert "2 tours complets" in html
+    # best lap hors cut (1:35:791) en fond jaune, le tour cut non surligné
+    assert "best-lap" in html
+    assert html.count("best-lap") == 1
+
+
+def test_weekend_sessions_highlight_best_lap(client, app):
+    html = client.get("/weekend/1").get_data(as_text=True)
+    assert "best-lap" in html  # meilleur tour de John Doe surligné dans les sessions
 
 
 def test_new_time_print_shows_sector(app, tmp_path, capsys):

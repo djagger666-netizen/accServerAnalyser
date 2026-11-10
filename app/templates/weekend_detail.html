@@ -67,7 +67,7 @@
   <table>
     <tr><th>Pilote</th><th>Voiture</th><th>Tour #</th><th>Place</th><th>Temps tour</th><th>S1</th><th>S2</th><th>S3</th><th>Fuel</th><th>Cut</th></tr>
     {% for driver, lap in s.display_laps %}
-    <tr class="{{ 'cut-row' if lap.hasCut else '' }}">
+    <tr class="{% if lap.hasCut %}cut-row{% endif %}{% if lap.is_best %} best-lap{% endif %}">
       <td>{% if driver %}<a href="{{ url_for('driver_profile', driver_id=driver.id) }}">{{ driver.full_name() }}</a>{% else %}car {{ lap.car_id }}{% endif %}</td>
       <td>{{ lap.car_id }}</td>
       <td>{{ lap.lap_number if lap.lap_number is not none else '-' }}</td>
