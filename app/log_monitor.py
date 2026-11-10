@@ -71,7 +71,7 @@ class LogMonitorService(threading.Thread):
                 }
 
     def load_state(self):
-        """Charge les offsets de lecture persistés (fichier -> offset en octets)."""
+        """Charge les compteurs de lignes persistés (fichier -> nb de lignes lues)."""
         try:
             with open(self.state_path, "r", encoding="utf-8") as f:
                 self._state = json.load(f).get("files", {})
@@ -112,33 +112,22 @@ class LogMonitorService(threading.Thread):
         self.running = False
 
     def tail_file(self, path):
-        """Lit les nouveaux octets du fichier log depuis le dernier offset connu.
+        """Lit les nouvelles lignes du fichier log depuis le dernier compteur connu.
 
-        - offset persisté par fichier dans le fichier d'état (pas de relecture
+        Logique initiale (compteur de lignes + readlines), avec en plus :
+        - compteur persisté par fichier dans le fichier d'état (pas de relecture
           au redémarrage de l'appli)
         - si le fichier a rétréci (tronqué/recréé), on repart de 0
-        - une dernière ligne sans retour à la ligne est considérée comme
-          incomplète et traitée au passage suivant
         """
         try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                lines = f.readlines()
             offset = int(self._state.get(path, 0))
-            with open(path, "rb") as f:
-                f.seek(0, os.SEEK_END)
-                size = f.tell()
-                if size < offset:
-                    offset = 0
-                f.seek(offset)
-                data = f.read()
-            new_offset = offset + len(data)
-            if data and not data.endswith(b"\n"):
-                idx = data.rfind(b"\n")
-                if idx == -1:
-                    return
-                data = data[:idx]
-                new_offset = offset + idx + 1
-            for line in data.decode("utf-8", errors="ignore").splitlines():
+            if len(lines) < offset:
+                offset = 0
+            for line in lines[offset:]:
                 self.dispatch_line(line)
-            self._state[path] = new_offset
+            self._state[path] = len(lines)
             self.save_state()
         except Exception as e:
             print(f"Erreur lecture log {path}: {e}")

@@ -68,15 +68,12 @@ def test_truncated_file_is_reread_from_start(env):
         assert LapLive.query.count() == 3  # relu depuis le début
 
 
-def test_partial_line_waits_for_newline(env):
+def test_partial_line_is_processed_like_initial_logic(env):
+    # logique initiale: readlines traite la dernière ligne même sans \n final
     app, log, logs_dir, tmp_path = env
-    log.write_text(LINE_TRACK + LINE_LAP.rstrip("\n"), encoding="utf-8")  # ligne incomplète
+    log.write_text(LINE_TRACK + LINE_LAP.rstrip("\n"), encoding="utf-8")
     m = make_monitor(app, log, tmp_path)
     with app.app_context():
-        m.tail_file(str(log))
-        assert LapLive.query.count() == 0
-        with open(str(log), "a", encoding="utf-8") as f:
-            f.write("\n")
         m.tail_file(str(log))
         assert LapLive.query.count() == 1
 
