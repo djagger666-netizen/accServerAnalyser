@@ -47,12 +47,12 @@
   <summary>
     <strong>{{ s.race.race_session or '?' }}</strong> — {{ s.race.piste }}
     — {{ s.race.date.strftime('%d/%m/%Y %H:%M') if s.race.date else '' }}
-    ({{ s.laps|length }} lignes, <a href="{{ url_for('race_detail', race_id=s.race.id) }}">détail</a>)
+    ({{ s.display_laps|length }} tours, <a href="{{ url_for('race_detail', race_id=s.race.id) }}">détail complet</a>)
   </summary>
-  {% if s.laps %}
+  {% if s.display_laps %}
   <table>
     <tr><th>Pilote</th><th>Voiture</th><th>Tour #</th><th>Place</th><th>Temps tour</th><th>S1</th><th>S2</th><th>S3</th><th>Fuel</th><th>Cut</th></tr>
-    {% for driver, lap in s.laps %}
+    {% for driver, lap in s.display_laps %}
     <tr class="{{ 'cut-row' if lap.hasCut else '' }}">
       <td>{% if driver %}<a href="{{ url_for('driver_profile', driver_id=driver.id) }}">{{ driver.full_name() }}</a>{% else %}car {{ lap.car_id }}{% endif %}</td>
       <td>{{ lap.car_id }}</td>

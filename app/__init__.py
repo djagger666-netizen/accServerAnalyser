@@ -124,6 +124,7 @@ def register_routes(app):
             sessions.append({
                 "race": race,
                 "laps": laps,
+                "display_laps": [(d, l) for d, l in laps if l.lap_time is not None],
                 "ranking": ranking,
                 "race_ranking": race_ranking,
                 "is_race": race.race_session in ("Race", "Race Completed"),

@@ -119,6 +119,9 @@ def test_weekend_page_results_and_sessions(client, app):
     assert "cut-row" in html
     # numéro de tour cumulé + temps au tour
     assert "Tour #" in html and "Temps tour" in html
+    # sessions = tours complets uniquement: le split S1 0:30:000 n'y est pas
+    assert "0:30:000" not in html
+    assert "2 tours" in html  # qualif: 2 tours accomplis
     assert client.get("/weekend/9999").status_code == 404
 
 
