@@ -70,6 +70,23 @@ def annotate_best_laps(laps):
     return laps
 
 
+def annotate_sector_bests(laps):
+    """Marque le secteur le plus rapide (hors cut) de la session: lap.best_s1/s2/s3."""
+    bests = {"s1": None, "s2": None, "s3": None}
+    for _, lap in laps:
+        if lap.hasCut:
+            continue
+        for s in bests:
+            v = getattr(lap, s)
+            if v is not None and (bests[s] is None or v < bests[s]):
+                bests[s] = v
+    for _, lap in laps:
+        lap.best_s1 = not lap.hasCut and lap.s1 is not None and lap.s1 == bests["s1"]
+        lap.best_s2 = not lap.hasCut and lap.s2 is not None and lap.s2 == bests["s2"]
+        lap.best_s3 = not lap.hasCut and lap.s3 is not None and lap.s3 == bests["s3"]
+    return laps
+
+
 def register_routes(app):
     from .models import Drivers, LapLive, Races, Server, WeekEnds
 
@@ -109,13 +126,15 @@ def register_routes(app):
         races = Races.query.filter_by(we_id=we_id).order_by(Races.id.asc()).all()
         sessions = []
         for race in races:
-            laps = annotate_best_laps(annotate_lap_numbers(
+            laps = annotate_lap_numbers(
                 db.session.query(Drivers, LapLive)
                 .outerjoin(Drivers, LapLive.player_id == Drivers.player_id)
                 .filter(LapLive.race_id == race.id)
                 .order_by(LapLive.id.asc())
                 .all()
-            ))
+            )
+            completed = [(d, l) for d, l in laps if l.lap_time is not None]
+            annotate_sector_bests(annotate_best_laps(completed))
             best = {}
             for driver, lap in laps:
                 # résultats: on ignore les tours avec cut
@@ -166,13 +185,13 @@ def register_routes(app):
     @app.route("/race/<int:race_id>")
     def race_detail(race_id):
         race = Races.query.get_or_404(race_id)
-        results = annotate_best_laps(annotate_lap_numbers(
+        results = annotate_sector_bests(annotate_best_laps(annotate_lap_numbers(
             db.session.query(Drivers, LapLive)
             .outerjoin(Drivers, LapLive.player_id == Drivers.player_id)
             .filter(LapLive.race_id == race_id, LapLive.lap_time.isnot(None))
             .order_by(LapLive.id.asc())
             .all()
-        ))
+        )))
         return render_template("race_detail.html", race=race, results=results)
 
     @app.route("/live")

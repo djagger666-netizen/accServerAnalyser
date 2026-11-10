@@ -151,6 +151,16 @@ def test_weekend_sessions_highlight_best_lap(client, app):
     assert "best-lap" in html  # meilleur tour de John Doe surligné dans les sessions
 
 
+def test_fastest_sectors_highlighted(client, app):
+    with app.app_context():
+        race_id = Races.query.order_by(Races.id.asc()).first().id  # Qualifying
+    html = client.get(f"/race/{race_id}").get_data(as_text=True)
+    # un seul tour complet hors cut -> ses 3 secteurs sont les plus rapides
+    assert html.count('class="best-sector"') == 3
+    html_we = client.get("/weekend/1").get_data(as_text=True)
+    assert 'class="best-sector"' in html_we
+
+
 def test_new_time_print_shows_sector(app, tmp_path, capsys):
     log_path = tmp_path / "server.log"
     log_path.write_text(

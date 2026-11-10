@@ -24,7 +24,9 @@
     <td>{{ lap.lap_number if lap.lap_number is not none else '-' }}</td>
     <td>{{ lap.driver_place }}</td>
     <td>{{ lap.lap_time|ms_to_time }}</td>
-    <td>{{ lap.s1|ms_to_time }}</td><td>{{ lap.s2|ms_to_time }}</td><td>{{ lap.s3|ms_to_time }}</td>
+    <td class="{{ 'best-sector' if lap.best_s1 else '' }}">{{ lap.s1|ms_to_time }}</td>
+    <td class="{{ 'best-sector' if lap.best_s2 else '' }}">{{ lap.s2|ms_to_time }}</td>
+    <td class="{{ 'best-sector' if lap.best_s3 else '' }}">{{ lap.s3|ms_to_time }}</td>
     <td>{{ '%.1f'|format(lap.fuel) }}</td>
     <td>{{ 'oui' if lap.hasCut else '' }}</td>
   </tr>
