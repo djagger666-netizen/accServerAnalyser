@@ -108,6 +108,9 @@ def test_weekend_page_results_and_sessions(client, app):
     assert "Qualifying" in html and "Race" in html
     assert "1:35:791" in html  # meilleur tour qualif (hors cut)
     assert "1:36:100" in html  # meilleur tour race
+    # le tour cut 94500 ms (1:34:500) ne compte pas dans les résultats:
+    # il n'apparaît que dans le tableau dépliable de la session (1 fois)
+    assert html.count("1:34:500") == 1
     assert "John Doe" in html
     # session dépliable + tour cut en rouge
     assert "<details>" in html

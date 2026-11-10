@@ -91,12 +91,13 @@ def register_routes(app):
             )
             best = {}
             for driver, lap in laps:
-                if lap.lap_time is None:
+                # résultats: on ignore les tours avec cut
+                if lap.lap_time is None or lap.hasCut:
                     continue
                 key = lap.player_id or f"car{lap.car_id}"
                 cur = best.get(key)
-                if cur is None or (not lap.hasCut and (cur[1] or lap.lap_time < cur[0])):
-                    best[key] = (lap.lap_time, lap.hasCut, driver)
+                if cur is None or lap.lap_time < cur[0]:
+                    best[key] = (lap.lap_time, driver)
             ranking = sorted(best.values(), key=lambda b: b[0])
             sessions.append({"race": race, "laps": laps, "ranking": ranking})
         return render_template("weekend_detail.html", we=we, sessions=sessions)

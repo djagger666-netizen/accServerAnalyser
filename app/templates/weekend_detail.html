@@ -10,11 +10,11 @@
 {% if s.ranking %}
 <table>
   <tr><th>#</th><th>Pilote</th><th>Meilleur tour</th></tr>
-  {% for lap_time, cut, driver in s.ranking %}
-  <tr class="{{ 'cut-row' if cut else '' }}">
+  {% for lap_time, driver in s.ranking %}
+  <tr>
     <td>{{ loop.index }}</td>
     <td>{{ driver.full_name() if driver else '?' }}</td>
-    <td>{{ lap_time|ms_to_time }}{% if cut %} (cut){% endif %}</td>
+    <td>{{ lap_time|ms_to_time }}</td>
   </tr>
   {% endfor %}
 </table>
