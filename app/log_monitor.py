@@ -41,7 +41,7 @@ class LogMonitorService(threading.Thread):
         self.we_id = None
         self.pending_driver_request = None
 
-        self.we_id = self.commit_new_weekend()
+        self.we_id = self.current_weekend_id()
 
     def load_mapping(self):
         """Charge la correspondance numéro de course -> SteamID depuis l'entrylist."""
@@ -150,12 +150,28 @@ class LogMonitorService(threading.Thread):
         elif "-> <session completed>" in line:
             self.process_line_session_end(line)
 
+    def current_weekend_id(self):
+        """Week-end courant: le dernier existant (créé si aucun).
+
+        Un redémarrage de l'appli ne crée PAS un nouveau week-end: le serveur
+        n'a pas reset son week-end pour autant.
+        """
+        with self.app.app_context():
+            last = WeekEnds.query.order_by(WeekEnds.id.desc()).first()
+            if last is not None:
+                return last.id
+            we = WeekEnds(races_id=[])
+            db.session.add(we)
+            db.session.commit()
+            print(f"New weekend committed with ID: {we.id}")
+            return we.id
+
     def commit_new_weekend(self):
         with self.app.app_context():
             last = WeekEnds.query.order_by(WeekEnds.id.desc()).first()
             if last is not None and not last.races_id:
-                # reset(s) consécutifs (ou redémarrage de l'appli) sans aucune
-                # course entre-temps: on réutilise le week-end courant
+                # reset(s) consécutifs sans aucune course entre-temps:
+                # on réutilise le week-end courant
                 print(f"Week-end courant #{last.id} réutilisé (aucune course enregistrée)")
                 return last.id
             we = WeekEnds(races_id=[])

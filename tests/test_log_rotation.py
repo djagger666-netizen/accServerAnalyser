@@ -115,6 +115,18 @@ def test_consecutive_weekend_resets_reuse_empty_weekend(env):
         assert [r.we_id for r in races] == [1, 2]
 
 
+def test_restart_does_not_create_empty_weekend(env):
+    app, log, logs_dir, tmp_path = env
+    log.write_text("Session changed: Practice -> Race 0\n" + LINE_LAP, encoding="utf-8")
+    with app.app_context():
+        make_monitor(app, log, tmp_path).tail_file(str(log))
+        n_we = WeekEnds.query.count()
+        # redémarrage de l'appli (nouveau moniteur): aucun week-end vide ajouté
+        m2 = make_monitor(app, log, tmp_path)
+        assert WeekEnds.query.count() == n_we
+        assert m2.we_id == WeekEnds.query.order_by(WeekEnds.id.desc()).first().id
+
+
 def test_state_persisted_across_monitor_instances(env):
     app, log, logs_dir, tmp_path = env
     log.write_text(LINE_TRACK + LINE_LAP, encoding="utf-8")
