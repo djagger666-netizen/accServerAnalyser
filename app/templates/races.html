@@ -13,19 +13,24 @@
   <input type="number" name="year" placeholder="Année" value="{{ request.args.get('year', '') }}">
   <button type="submit">Filtrer</button>
 </form>
-{% if races %}
+{% if groups %}
+{% for g in groups %}
+<h2>
+  <a href="{{ url_for('weekend_detail', we_id=g.we.id) }}">Week-end #{{ g.we.id }}</a>
+  <small>{{ g.we.date.strftime('%d/%m/%Y %H:%M') if g.we and g.we.date else '' }}</small>
+</h2>
 <table>
-  <tr><th>ID</th><th>Date</th><th>Piste</th><th>Session</th><th>Week-end</th></tr>
-  {% for r in races %}
+  <tr><th>ID</th><th>Date</th><th>Piste</th><th>Session</th></tr>
+  {% for r in g.races %}
   <tr>
     <td><a href="{{ url_for('race_detail', race_id=r.id) }}">{{ r.id }}</a></td>
     <td>{{ r.date.strftime('%d/%m/%Y %H:%M') if r.date else '' }}</td>
     <td>{{ r.piste }}</td>
     <td><span class="badge">{{ r.race_session or '' }}</span></td>
-    <td>{{ r.we_id }}</td>
   </tr>
   {% endfor %}
 </table>
+{% endfor %}
 {% else %}
 <p>Aucune course enregistrée pour le moment. Le moniteur de log alimentera cette page.</p>
 {% endif %}

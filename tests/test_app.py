@@ -93,6 +93,28 @@ def test_race_detail_shows_formatted_times(client, app):
     assert "1:36:100" in html  # 96100 ms au format m:ss:mmm
 
 
+def test_races_grouped_by_weekend(client, app):
+    html = client.get("/races").get_data(as_text=True)
+    assert "Week-end #1" in html
+    assert "/weekend/1" in html
+
+
+def test_weekend_page_results_and_sessions(client, app):
+    resp = client.get("/weekend/1")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    # résultats classés par meilleur tour en haut
+    assert "Résultats" in html
+    assert "Qualifying" in html and "Race" in html
+    assert "1:35:791" in html  # meilleur tour qualif (hors cut)
+    assert "1:36:100" in html  # meilleur tour race
+    assert "John Doe" in html
+    # session dépliable + tour cut en rouge
+    assert "<details>" in html
+    assert "cut-row" in html
+    assert client.get("/weekend/9999").status_code == 404
+
+
 def test_new_time_print_shows_sector(app, tmp_path, capsys):
     log_path = tmp_path / "server.log"
     log_path.write_text(

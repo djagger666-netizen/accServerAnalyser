@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Week-end #{{ we.id }} - ACC Server Analyser{% endblock %}
+{% block content %}
+<h1>Week-end #{{ we.id }}</h1>
+<p>{{ we.date.strftime('%d/%m/%Y %H:%M') if we.date else '' }}</p>
+
+<h2>Résultats (classés par meilleur tour)</h2>
+{% for s in sessions if s.race.race_session in ('Qualifying', 'Race', 'Race Completed') %}
+<h3>{{ s.race.race_session }} — {{ s.race.piste }}</h3>
+{% if s.ranking %}
+<table>
+  <tr><th>#</th><th>Pilote</th><th>Meilleur tour</th></tr>
+  {% for lap_time, cut, driver in s.ranking %}
+  <tr class="{{ 'cut-row' if cut else '' }}">
+    <td>{{ loop.index }}</td>
+    <td>{{ driver.full_name() if driver else '?' }}</td>
+    <td>{{ lap_time|ms_to_time }}{% if cut %} (cut){% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Aucun tour valide.</p>
+{% endif %}
+{% endfor %}
+
+<h2>Sessions</h2>
+{% for s in sessions %}
+<details>
+  <summary>
+    <strong>{{ s.race.race_session or '?' }}</strong> — {{ s.race.piste }}
+    — {{ s.race.date.strftime('%d/%m/%Y %H:%M') if s.race.date else '' }}
+    ({{ s.laps|length }} lignes, <a href="{{ url_for('race_detail', race_id=s.race.id) }}">détail</a>)
+  </summary>
+  {% if s.laps %}
+  <table>
+    <tr><th>Pilote</th><th>Voiture</th><th>Place</th><th>Tour</th><th>S1</th><th>S2</th><th>S3</th><th>Fuel</th><th>Cut</th></tr>
+    {% for driver, lap in s.laps %}
+    <tr class="{{ 'cut-row' if lap.hasCut else '' }}">
+      <td>{% if driver %}<a href="{{ url_for('driver_profile', driver_id=driver.id) }}">{{ driver.full_name() }}</a>{% else %}car {{ lap.car_id }}{% endif %}</td>
+      <td>{{ lap.car_id }}</td>
+      <td>{{ lap.driver_place }}</td>
+      <td>{{ lap.lap_time|ms_to_time }}</td>
+      <td>{{ lap.s1|ms_to_time }}</td><td>{{ lap.s2|ms_to_time }}</td><td>{{ lap.s3|ms_to_time }}</td>
+      <td>{{ '%.1f'|format(lap.fuel) }}</td>
+      <td>{{ 'oui' if lap.hasCut else '' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</details>
+{% endfor %}
+{% endblock %}

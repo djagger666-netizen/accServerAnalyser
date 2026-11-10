@@ -44,7 +44,7 @@ def ms_to_time(ms):
 
 
 def register_routes(app):
-    from .models import Drivers, LapLive, Races, Server
+    from .models import Drivers, LapLive, Races, Server, WeekEnds
 
     app.add_template_filter(ms_to_time, "ms_to_time")
 
@@ -67,7 +67,39 @@ def register_routes(app):
 
         races = query.order_by(Races.date.desc()).all()
         pistes = [p[0] for p in db.session.query(Races.piste).distinct().all()]
-        return render_template("races.html", races=races, pistes=pistes)
+        by_we = {}
+        for r in races:
+            by_we.setdefault(r.we_id, []).append(r)
+        groups = [
+            {"we": WeekEnds.query.get(we_id), "races": by_we[we_id]}
+            for we_id in sorted(by_we, reverse=True)
+        ]
+        return render_template("races.html", groups=groups, pistes=pistes)
+
+    @app.route("/weekend/<int:we_id>")
+    def weekend_detail(we_id):
+        we = WeekEnds.query.get_or_404(we_id)
+        races = Races.query.filter_by(we_id=we_id).order_by(Races.id.asc()).all()
+        sessions = []
+        for race in races:
+            laps = (
+                db.session.query(Drivers, LapLive)
+                .outerjoin(Drivers, LapLive.player_id == Drivers.player_id)
+                .filter(LapLive.race_id == race.id)
+                .order_by(LapLive.lap_time.asc())
+                .all()
+            )
+            best = {}
+            for driver, lap in laps:
+                if lap.lap_time is None:
+                    continue
+                key = lap.player_id or f"car{lap.car_id}"
+                cur = best.get(key)
+                if cur is None or (not lap.hasCut and (cur[1] or lap.lap_time < cur[0])):
+                    best[key] = (lap.lap_time, lap.hasCut, driver)
+            ranking = sorted(best.values(), key=lambda b: b[0])
+            sessions.append({"race": race, "laps": laps, "ranking": ranking})
+        return render_template("weekend_detail.html", we=we, sessions=sessions)
 
     @app.route("/race/<int:race_id>")
     def race_detail(race_id):
