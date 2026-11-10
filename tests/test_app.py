@@ -117,7 +117,18 @@ def test_weekend_page_results_and_sessions(client, app):
     # session dépliable + tour cut en rouge
     assert "<details>" in html
     assert "cut-row" in html
+    # numéro de tour cumulé + temps au tour
+    assert "Tour #" in html and "Temps tour" in html
     assert client.get("/weekend/9999").status_code == 404
+
+
+def test_lap_numbers_are_cumulative_per_driver(client, app):
+    with app.app_context():
+        race_id = Races.query.order_by(Races.id.asc()).first().id  # Qualifying
+    html = client.get(f"/race/{race_id}").get_data(as_text=True)
+    assert "Tour #" in html
+    # John Doe: 2 tours accomplis en qualif (le 2e avec cut) -> Tour #1 et #2
+    assert ">1</td>" in html and ">2</td>" in html
 
 
 def test_new_time_print_shows_sector(app, tmp_path, capsys):

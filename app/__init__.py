@@ -43,6 +43,19 @@ def ms_to_time(ms):
     return f"{minutes}:{seconds:02d}:{millis:03d}"
 
 
+def annotate_lap_numbers(laps):
+    """Numérote les tours accomplis (lap_time renseigné) par pilote, dans l'ordre chronologique."""
+    counts = {}
+    for driver, lap in laps:
+        if lap.lap_time is not None:
+            key = lap.player_id or f"car{lap.car_id}"
+            counts[key] = counts.get(key, 0) + 1
+            lap.lap_number = counts[key]
+        else:
+            lap.lap_number = None
+    return laps
+
+
 def register_routes(app):
     from .models import Drivers, LapLive, Races, Server, WeekEnds
 
@@ -82,11 +95,11 @@ def register_routes(app):
         races = Races.query.filter_by(we_id=we_id).order_by(Races.id.asc()).all()
         sessions = []
         for race in races:
-            laps = (
+            laps = annotate_lap_numbers(
                 db.session.query(Drivers, LapLive)
                 .outerjoin(Drivers, LapLive.player_id == Drivers.player_id)
                 .filter(LapLive.race_id == race.id)
-                .order_by(LapLive.lap_time.asc())
+                .order_by(LapLive.id.asc())
                 .all()
             )
             best = {}
@@ -120,11 +133,11 @@ def register_routes(app):
     @app.route("/race/<int:race_id>")
     def race_detail(race_id):
         race = Races.query.get_or_404(race_id)
-        results = (
+        results = annotate_lap_numbers(
             db.session.query(Drivers, LapLive)
             .outerjoin(Drivers, LapLive.player_id == Drivers.player_id)
             .filter(LapLive.race_id == race_id)
-            .order_by(LapLive.lap_time.asc())
+            .order_by(LapLive.id.asc())
             .all()
         )
         return render_template("race_detail.html", race=race, results=results)
