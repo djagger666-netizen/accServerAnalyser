@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Courses - ACC Server Analyser{% endblock %}
+{% block content %}
+<h1>Historique des courses</h1>
+<form class="filters" method="get" action="{{ url_for('list_races') }}">
+  <select name="piste">
+    <option value="">Toutes les pistes</option>
+    {% for p in pistes %}
+    <option value="{{ p }}" {% if request.args.get('piste') == p %}selected{% endif %}>{{ p }}</option>
+    {% endfor %}
+  </select>
+  <input type="number" name="month" placeholder="Mois" min="1" max="12" value="{{ request.args.get('month', '') }}">
+  <input type="number" name="year" placeholder="Année" value="{{ request.args.get('year', '') }}">
+  <button type="submit">Filtrer</button>
+</form>
+{% if races %}
+<table>
+  <tr><th>ID</th><th>Date</th><th>Piste</th><th>Session</th><th>Week-end</th></tr>
+  {% for r in races %}
+  <tr>
+    <td><a href="{{ url_for('race_detail', race_id=r.id) }}">{{ r.id }}</a></td>
+    <td>{{ r.date.strftime('%d/%m/%Y %H:%M') if r.date else '' }}</td>
+    <td>{{ r.piste }}</td>
+    <td><span class="badge">{{ r.race_session or '' }}</span></td>
+    <td>{{ r.we_id }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Aucune course enregistrée pour le moment. Le moniteur de log alimentera cette page.</p>
+{% endif %}
+{% endblock %}

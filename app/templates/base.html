@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ACC Server Analyser{% endblock %}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #14161a; color: #e8e8e8; }
+    nav { background: #1f232b; padding: 0.8rem 1.5rem; display: flex; gap: 1.5rem; }
+    nav a { color: #e8e8e8; text-decoration: none; font-weight: 600; }
+    nav a:hover { color: #ff4d4d; }
+    main { padding: 1.5rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border-bottom: 1px solid #2c313a; padding: 0.5rem 0.75rem; text-align: left; }
+    th { color: #9aa4b2; text-transform: uppercase; font-size: 0.75rem; }
+    a { color: #6db3ff; }
+    .badge { background: #2c313a; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.8rem; }
+    .cut { color: #ff4d4d; }
+    form.filters { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    select, button { background: #1f232b; color: #e8e8e8; border: 1px solid #2c313a; padding: 0.4rem 0.6rem; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="{{ url_for('index') }}">Accueil</a>
+    <a href="{{ url_for('list_races') }}">Courses</a>
+    <a href="{{ url_for('live_page') }}">Live</a>
+    <a href="{{ url_for('list_drivers') }}">Pilotes</a>
+    <a href="{{ url_for('list_servers') }}">Serveurs</a>
+  </nav>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

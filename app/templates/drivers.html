@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Pilotes - ACC Server Analyser{% endblock %}
+{% block content %}
+<h1>Pilotes</h1>
+{% if drivers %}
+<table>
+  <tr><th>Nom</th><th>Steam ID</th><th>N° course</th><th>Car ID</th><th>Modèle</th></tr>
+  {% for d in drivers %}
+  <tr>
+    <td><a href="{{ url_for('driver_profile', driver_id=d.id) }}">{{ d.full_name() }}</a></td>
+    <td>{{ d.player_id }}</td>
+    <td>{{ d.race_number }}</td>
+    <td>{{ d.car_id }}</td>
+    <td>{{ d.car_model }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Aucun pilote enregistré pour le moment.</p>
+{% endif %}
+{% endblock %}

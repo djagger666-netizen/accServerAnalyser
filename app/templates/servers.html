@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Serveurs - ACC Server Analyser{% endblock %}
+{% block content %}
+<h1>Serveurs surveillés</h1>
+{% if servers %}
+<table>
+  <tr><th>ID</th><th>Nom</th><th>Chemin</th><th>TCP</th><th>UDP</th></tr>
+  {% for s in servers %}
+  <tr><td>{{ s.id }}</td><td>{{ s.name }}</td><td>{{ s.path }}</td><td>{{ s.tcp_port }}</td><td>{{ s.udp_port }}</td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Aucun serveur enregistré. Le chemin du log surveillé se configure via la variable d'environnement <code>ACC_LOG_PATH</code>.</p>
+{% endif %}
+{% endblock %}

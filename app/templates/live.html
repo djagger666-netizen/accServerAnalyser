@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Live - ACC Server Analyser{% endblock %}
+{% block content %}
+<h1>Live</h1>
+<p id="status">Chargement…</p>
+<div id="race-info"></div>
+<table id="live-table">
+  <thead><tr><th>Pilote</th><th>Voiture</th><th>Place</th><th>Dernier tour (ms)</th><th>Fuel</th><th>Cut</th></tr></thead>
+  <tbody></tbody>
+</table>
+<script>
+async function refresh() {
+  const res = await fetch("{{ url_for('api_live_data') }}");
+  const data = await res.json();
+  const status = document.getElementById('status');
+  if (data.race) {
+    status.textContent = `Course #${data.race.id} — ${data.race.piste} (${data.race.race_session || 'session inconnue'})`;
+  } else {
+    status.textContent = 'Aucune course en cours.';
+  }
+  const tbody = document.querySelector('#live-table tbody');
+  tbody.innerHTML = '';
+  for (const lap of data.laps) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${lap.driver || 'car ' + lap.car_id}</td><td>${lap.car_id}</td>` +
+      `<td>${lap.place}</td><td>${lap.lap_time ?? '-'}</td><td>${lap.fuel.toFixed(1)}</td>` +
+      `<td class="${lap.hasCut ? 'cut' : ''}">${lap.hasCut ? 'oui' : ''}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+refresh();
+setInterval(refresh, 2000);
+</script>
+{% endblock %}

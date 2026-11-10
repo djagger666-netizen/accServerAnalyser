@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>ACC Server Analyser</h1>
+<p>Surveillance du <code>server.log</code> d'un serveur Assetto Corsa Competizione :
+résumé et historique de la vie du serveur (week-ends, sessions, pilotes, tours).</p>
+<ul>
+  <li><a href="{{ url_for('list_races') }}">Historique des courses</a></li>
+  <li><a href="{{ url_for('live_page') }}">Données live</a></li>
+  <li><a href="{{ url_for('list_drivers') }}">Pilotes</a></li>
+  <li><a href="{{ url_for('list_servers') }}">Serveurs surveillés</a></li>
+</ul>
+{% endblock %}

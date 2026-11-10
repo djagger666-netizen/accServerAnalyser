@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ driver.full_name() }} - ACC Server Analyser{% endblock %}
+{% block content %}
+<h1>{{ driver.full_name() }}</h1>
+<p>Steam ID : {{ driver.player_id }} | N° de course : {{ driver.race_number }} | Car ID : {{ driver.car_id }}</p>
+<h2>Courses participé</h2>
+{% if races %}
+<table>
+  <tr><th>ID</th><th>Date</th><th>Piste</th><th>Session</th></tr>
+  {% for r in races %}
+  <tr>
+    <td><a href="{{ url_for('race_detail', race_id=r.id) }}">{{ r.id }}</a></td>
+    <td>{{ r.date.strftime('%d/%m/%Y %H:%M') if r.date else '' }}</td>
+    <td>{{ r.piste }}</td>
+    <td>{{ r.race_session or '' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Aucune course enregistrée pour ce pilote.</p>
+{% endif %}
+{% endblock %}
