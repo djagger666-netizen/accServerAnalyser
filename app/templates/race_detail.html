@@ -13,7 +13,7 @@
   {% for d in race.drivers %}<li>{{ d.player_id }} (driver_id {{ d.driver_id }})</li>{% endfor %}
 </ul>
 {% endif %}
-<h2>Tours</h2>
+<h2>Tours ({{ results|length }} tours complets)</h2>
 {% if results %}
 <table>
   <tr><th>Pilote</th><th>Voiture</th><th>Tour #</th><th>Place</th><th>Temps tour</th><th>S1</th><th>S2</th><th>S3</th><th>Fuel</th><th>Cut</th></tr>

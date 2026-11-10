@@ -156,7 +156,7 @@ def register_routes(app):
         results = annotate_lap_numbers(
             db.session.query(Drivers, LapLive)
             .outerjoin(Drivers, LapLive.player_id == Drivers.player_id)
-            .filter(LapLive.race_id == race_id)
+            .filter(LapLive.race_id == race_id, LapLive.lap_time.isnot(None))
             .order_by(LapLive.id.asc())
             .all()
         )

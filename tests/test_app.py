@@ -135,6 +135,9 @@ def test_lap_numbers_are_cumulative_per_driver(client, app):
     assert "Tour #" in html
     # John Doe: 2 tours accomplis en qualif (le 2e avec cut) -> Tour #1 et #2
     assert ">1</td>" in html and ">2</td>" in html
+    # /race/<id> n'affiche que les tours complets: le split S1 0:30:000 n'y est pas
+    assert "0:30:000" not in html
+    assert "2 tours complets" in html
 
 
 def test_new_time_print_shows_sector(app, tmp_path, capsys):
