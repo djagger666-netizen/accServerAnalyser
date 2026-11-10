@@ -44,14 +44,13 @@ class LogMonitorService(threading.Thread):
         self.running = True
         self.car_to_driver_map = {}
         self._state = {}
-        self.load_state()
-
         self.race_id = None
         self.piste = None
         self.race_session = None
         self.we_id = None
         self.pending_driver_request = None
 
+        self.load_state()
         self.we_id = self.current_weekend_id()
 
     def load_mapping(self):
@@ -82,10 +81,12 @@ class LogMonitorService(threading.Thread):
                 }
 
     def load_state(self):
-        """Charge les compteurs de lignes persistés (fichier -> nb de lignes lues)."""
+        """Charge l'état persisté: compteurs de lignes par fichier + piste courante."""
         try:
             with open(self.state_path, "r", encoding="utf-8") as f:
-                self._state = json.load(f).get("files", {})
+                data = json.load(f)
+            self._state = data.get("files", {})
+            self.piste = data.get("piste") or self.piste
         except (OSError, ValueError):
             self._state = {}
 
@@ -93,7 +94,7 @@ class LogMonitorService(threading.Thread):
         os.makedirs(os.path.dirname(self.state_path) or ".", exist_ok=True)
         tmp = self.state_path + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
-            json.dump({"files": self._state}, f)
+            json.dump({"files": self._state, "piste": self.piste}, f)
         os.replace(tmp, self.state_path)
 
     def archived_log_files(self):
@@ -196,6 +197,7 @@ class LogMonitorService(threading.Thread):
         piste = parse_track_line(line)
         if piste:
             self.piste = piste
+            self.save_state()
             print(f"--> Piste : {self.piste}")
 
     def process_line_session_end(self, line):

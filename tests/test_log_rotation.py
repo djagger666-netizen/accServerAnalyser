@@ -141,6 +141,16 @@ def test_restart_does_not_create_empty_weekend(env):
         assert m2.we_id == WeekEnds.query.order_by(WeekEnds.id.desc()).first().id
 
 
+def test_piste_persisted_across_monitor_instances(env):
+    app, log, logs_dir, tmp_path = env
+    log.write_text(LINE_TRACK + LINE_LAP, encoding="utf-8")
+    with app.app_context():
+        make_monitor(app, log, tmp_path).tail_file(str(log))
+        # redémarrage: la piste doit être restaurée depuis le fichier d'état
+        m2 = make_monitor(app, log, tmp_path)
+        assert m2.piste == "spa"
+
+
 def test_state_persisted_across_monitor_instances(env):
     app, log, logs_dir, tmp_path = env
     log.write_text(LINE_TRACK + LINE_LAP, encoding="utf-8")
