@@ -31,3 +31,29 @@ def test_absolute_path_kept_as_is(monkeypatch):
     assert config.Config.ACC_LOG_PATH == abs_path
     monkeypatch.delenv("ACC_LOG_PATH")
     importlib.reload(config)
+
+
+def test_local_config_file_overrides(tmp_path):
+    local = tmp_path / "config.local.py"
+    local.write_text(
+        'ACC_LOG_PATH = "..\\\\accweb_v1.27.0\\\\log\\\\server.log"\nPORT = 9999\n',
+        encoding="utf-8",
+    )
+
+    class Dummy:
+        ACC_LOG_PATH = "defaut"
+        PORT = 5000
+
+    config._apply_local_overrides(Dummy, str(local))
+    assert Dummy.PORT == 9999
+    assert config._resolve(Dummy.ACC_LOG_PATH) == os.path.normpath(
+        os.path.join(config.BASE_DIR, "..", "accweb_v1.27.0", "log", "server.log")
+    )
+
+
+def test_local_config_file_absent_is_noop(tmp_path):
+    class Dummy:
+        PORT = 5000
+
+    config._apply_local_overrides(Dummy, str(tmp_path / "inexistant.py"))
+    assert Dummy.PORT == 5000

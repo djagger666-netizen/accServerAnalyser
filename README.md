@@ -28,7 +28,16 @@ pip install -r requirements.txt        # + requirements-dev.txt pour les tests
 
 ## Configuration
 
-Par variables d'environnement (voir `config.py`) :
+**Fichier local recommandé** : copier `config.local.example.py` en `config.local.py`
+(ignoré par git) et y mettre tes chemins — il a priorité sur les variables
+d'environnement :
+
+```python
+ACC_LOG_PATH = r"..\accweb_v1.27.0\config\1786545622\log\server.log"
+ENTRYLIST_PATH = r"..\accweb_v1.27.0\config\1786545622\cfg\entrylist.json"
+```
+
+Sinon, par variables d'environnement (voir `config.py`) :
 
 | Variable | Défaut | Rôle |
 |---|---|---|
