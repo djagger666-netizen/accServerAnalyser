@@ -139,8 +139,8 @@ def test_lap_numbers_are_cumulative_per_driver(client, app):
     assert "0:30:000" not in html
     assert "2 tours complets" in html
     # best lap hors cut (1:35:791) en fond jaune, le tour cut non surligné
-    assert "best-lap" in html
-    assert html.count("best-lap") == 1
+    # (' best-lap"' = classe de ligne; le CSS contient 'tr.best-lap' sans guillemet)
+    assert html.count(' best-lap"') == 1
 
 
 def test_weekend_sessions_highlight_best_lap(client, app):
