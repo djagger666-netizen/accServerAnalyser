@@ -36,7 +36,7 @@ def test_absolute_path_kept_as_is(monkeypatch):
 def test_local_config_file_overrides(tmp_path):
     local = tmp_path / "config.local.py"
     local.write_text(
-        'ACC_LOG_PATH = "..\\\\accweb_v1.27.0\\\\log\\\\server.log"\nPORT = 9999\n',
+        'ACC_LOG_PATH = "../accweb_v1.27.0/log/server.log"\nPORT = 9999\n',
         encoding="utf-8",
     )
 
