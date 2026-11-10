@@ -39,8 +39,15 @@ class LogMonitorService(threading.Thread):
         """Charge la correspondance numéro de course -> SteamID depuis l'entrylist."""
         if not os.path.exists(self.entrylist_path):
             return
-        with open(self.entrylist_path, "r", encoding="utf-16-le") as f:
-            data = json.load(f)
+        with open(self.entrylist_path, "rb") as f:
+            raw = f.read()
+        if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+            text = raw.decode("utf-16")
+        elif raw.startswith(b"\xef\xbb\xbf"):
+            text = raw.decode("utf-8-sig")
+        else:
+            text = raw.decode("utf-8")
+        data = json.loads(text)
         for entry in data.get("entries", []):
             race_num = entry.get("raceNumber")
             if race_num and entry.get("drivers"):
@@ -56,7 +63,10 @@ class LogMonitorService(threading.Thread):
                 }
 
     def run(self):
-        self.load_mapping()
+        try:
+            self.load_mapping()
+        except Exception as e:
+            print(f"Entrylist illisible ({self.entrylist_path}), mapping ignoré: {e}")
         print(f"Monitoring active on {self.log_path}")
         while self.running:
             self.tail_file(self.log_path)
