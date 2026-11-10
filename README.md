@@ -16,8 +16,9 @@ et les enregistre dans une base SQLite via SQLAlchemy (`app/models.py`) :
 - `races` : une ligne par changement de session, liée au week-end en cours
 - `drivers` : pilotes vus via `New connection request` / `Creating new car
   connection` / `Recognized reconnect`
-- `laps_live` : chaque tour (`carId ... lapTime ...`), avec secteurs, fuel,
-  `hasCut` et `SessionOver`
+- `laps_live` : chaque tour (`carId ... lapTime ...`) **et chaque passage de
+  secteur** (ligne avec le lapTime sentinel `35791:23:647` → `lap_time` NULL,
+  secteurs S1/S2/S3 conservés), avec fuel, `hasCut` et `SessionOver`
 - `servers` : serveurs déclarés (nom, chemin, ports TCP/UDP)
 
 ## Installation

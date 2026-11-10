@@ -269,7 +269,16 @@ class LogMonitorService(threading.Thread):
         data = parse_lap_line(line)
         if data is None:
             return
-        kind = "tour" if data["lap_time"] is not None else "secteur"
+        if data["lap_time"] is not None:
+            kind = "tour"
+        elif data["s3"] is not None:
+            kind = "S3"
+        elif data["s2"] is not None:
+            kind = "S2"
+        elif data["s1"] is not None:
+            kind = "S1"
+        else:
+            kind = "secteur"
         print(f"      newTime[{kind}]: car={data['car_id']} race={self.race_id} "
               f"lap={data['lap_time']}ms cut={data['hasCut']} over={data['sessionOver']}")
         with self.app.app_context():

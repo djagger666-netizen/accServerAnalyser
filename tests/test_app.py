@@ -86,6 +86,27 @@ def test_race_detail_and_driver_pages(client, app):
     assert client.get("/race/9999").status_code == 404
 
 
+def test_new_time_print_shows_sector(app, tmp_path, capsys):
+    log_path = tmp_path / "server.log"
+    log_path.write_text(
+        "Session changed: Practice 0 -> Race 0\n"
+        "Lap carId 5, driverId 1, lapTime 35791:23:647, timestampMS 1000.0, flags: 0, S1 0:30:000, fuel 10.0\n"
+        "Lap carId 5, driverId 1, lapTime 35791:23:647, timestampMS 2000.0, flags: 0, S1 0:30:000, S2 0:31:000, fuel 9.0\n"
+        "Lap carId 5, driverId 1, lapTime 1:35:791, timestampMS 3000.0, flags: 0, S1 0:30:000, S2 0:31:000, S3 0:34:791, fuel 8.0\n",
+        encoding="utf-8",
+    )
+    monitor = LogMonitorService(
+        app, str(log_path), str(tmp_path / "entrylist.json"),
+        state_path=str(tmp_path / "state.json"),
+    )
+    with app.app_context():
+        monitor.tail_file(str(log_path))
+    out = capsys.readouterr().out
+    assert "newTime[S1]" in out
+    assert "newTime[S2]" in out
+    assert "newTime[tour]" in out
+
+
 def test_live_api_contains_laps(client, app):
     with app.app_context():
         race = Races.query.order_by(Races.id.desc()).first()
