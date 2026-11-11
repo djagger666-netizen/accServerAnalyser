@@ -143,12 +143,20 @@ def register_routes(app):
 
         races = query.order_by(Races.date.desc()).all()
         pistes = [p[0] for p in db.session.query(Races.piste).distinct().all()]
+        # week-ends sans aucun tour accompli: non affichés
+        race_ids_with_laps = {
+            r[0]
+            for r in db.session.query(LapLive.race_id)
+            .filter(LapLive.lap_time.isnot(None))
+            .distinct()
+        }
         by_we = {}
         for r in races:
             by_we.setdefault(r.we_id, []).append(r)
         groups = [
             {"we": WeekEnds.query.get(we_id), "races": by_we[we_id]}
             for we_id in sorted(by_we, reverse=True)
+            if any(r.id in race_ids_with_laps for r in by_we[we_id])
         ]
         return render_template("races.html", groups=groups, pistes=pistes)
 

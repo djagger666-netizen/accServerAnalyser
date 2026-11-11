@@ -6,8 +6,9 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app import create_app
+from app.extensions import db
 from app.log_monitor import LogMonitorService
-from app.models import Drivers, LapLive, Races
+from app.models import Drivers, LapLive, Races, WeekEnds
 
 SAMPLE_LOG = """\
 Track monza was set and updated
@@ -117,6 +118,19 @@ def test_races_grouped_by_weekend(client, app):
     html = client.get("/races").get_data(as_text=True)
     assert "Week-end #1" in html
     assert "/weekend/1" in html
+
+
+def test_races_hides_weekends_without_laps(client, app):
+    with app.app_context():
+        we = WeekEnds(races_id=[])
+        db.session.add(we)
+        db.session.commit()
+        db.session.add(Races(piste="spa", we_id=we.id, race_session="Practice"))
+        db.session.commit()
+        empty_we_id = we.id
+    html = client.get("/races").get_data(as_text=True)
+    assert f"Week-end #{empty_we_id}" not in html  # 0 tour -> caché
+    assert "Week-end #1" in html  # celui avec des tours reste visible
 
 
 def test_weekend_page_results_and_sessions(client, app):
