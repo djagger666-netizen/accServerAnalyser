@@ -1,0 +1,16 @@
+# Comptes du portail. Le mot de passe est un hash bcrypt :
+#   docker run --rm authelia/authelia:4 authelia hash-password 'TON_MOT_DE_PASSE'
+users:
+  jean:
+    displayname: Jean Dupont
+    password: "$2y$10$REMPLACER_PAR_LE_HASH_BCRYPT"
+    email: jean@ton-domaine.fr
+    groups:
+      - pilotes
+  admin:
+    displayname: Administrateur
+    password: "$2y$10$REMPLACER_PAR_LE_HASH_BCRYPT"
+    email: admin@ton-domaine.fr
+    groups:
+      - admins
+      - pilotes

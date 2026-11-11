@@ -1,0 +1,42 @@
+server:
+  address: tcp://0.0.0.0:9091
+
+log:
+  level: info
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+
+access_control:
+  default_policy: deny
+  rules:
+    # tout le monde du portail (1 facteur) sur accServerAnalyser
+    - domain: accserver.ton-domaine.fr
+      policy: one_factor
+    # accCoachAnalyser réservé aux admins, avec 2FA
+    - domain: acccoach.ton-domaine.fr
+      policy: two_factor
+      subject:
+        - group:admins
+
+session:
+  name: authelia_session
+  domain: ton-domaine.fr
+  expiration: 1h
+  inactivity: 30m
+  redis:
+    host: redis
+    port: 6379
+
+storage:
+  local:
+    path: /config/db.sqlite3
+
+totp:
+  issuer: ton-domaine.fr
+
+# Pour tests sans serveur mail: les liens de notif sont écrits dans ce fichier
+notifier:
+  filesystem:
+    filename: /config/notifications.txt

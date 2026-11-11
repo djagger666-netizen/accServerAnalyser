@@ -6,3 +6,6 @@ instance/
 .env
 config.local.py
 server_files/
+
+# secrets du portail (ne pas committer)
+deploy/portal/secrets/*.txt

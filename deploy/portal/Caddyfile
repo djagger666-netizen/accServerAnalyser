@@ -1,0 +1,26 @@
+{
+    email admin@ton-domaine.fr
+}
+
+# Portail de login Authelia
+auth.ton-domaine.fr {
+    reverse_proxy authelia:9091
+}
+
+# accServerAnalyser (PC Windows, IP à adapter)
+accserver.ton-domaine.fr {
+    forward_auth authelia:9091 {
+        uri /api/verify?rd=https://auth.ton-domaine.fr
+        copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+    }
+    reverse_proxy 192.168.1.42:5000
+}
+
+# accCoachAnalyser (IP à adapter)
+acccoach.ton-domaine.fr {
+    forward_auth authelia:9091 {
+        uri /api/verify?rd=https://auth.ton-domaine.fr
+        copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+    }
+    reverse_proxy 192.168.1.43:5000
+}
