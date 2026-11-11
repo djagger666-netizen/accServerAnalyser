@@ -68,6 +68,19 @@ python run.py
 Puis ouvrir http://127.0.0.1:5000 — pages : Courses (historique filtrable),
 Live (`/api/live_data` rafraîchi en JSON), Pilotes, Serveurs.
 
+## Production (derrière un reverse proxy)
+
+Ne pas utiliser `python run.py` (serveur de dev) en production. Utiliser le
+serveur WSGI waitress :
+
+```bash
+pip install -r requirements-prod.txt
+python serve_prod.py
+```
+
+Derrière un reverse proxy (nginx/Caddy) avec HTTPS (Let's Encrypt), ex :
+`https://acc.ton-domaine.fr` → `http://<ip-du-pc>:5000`.
+
 ## Tests
 
 ```bash
