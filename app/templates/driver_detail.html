@@ -2,7 +2,12 @@
 {% block title %}{{ driver.full_name() }} - ACC Server Analyser{% endblock %}
 {% block content %}
 <h1>{{ driver.full_name() }}</h1>
-<p>Steam ID : {{ driver.player_id }} | N° de course : {{ driver.race_number }} | Car ID : {{ driver.car_id }}</p>
+<p>
+  Tours effectués : <strong>{{ stats.laps }}</strong> |
+  Voiture préférée :
+  {% if stats.car %}<span class="brand-badge" style="background: {{ stats.car.color }}">{{ stats.car.brand }}</span> {{ stats.car.model }}{% endif %}
+  | Piste préférée : <strong>{{ stats.track or '-' }}</strong>
+</p>
 <h2>Courses participé</h2>
 {% if races %}
 <table>

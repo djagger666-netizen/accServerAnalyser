@@ -70,6 +70,38 @@ def annotate_best_laps(laps):
     return laps
 
 
+def driver_stats(player_id, car_model_fallback=None):
+    """Stats d'un pilote: nb de tours accomplis, voiture préférée, piste préférée."""
+    from sqlalchemy import func
+
+    from .models import LapLive, Races
+
+    laps = LapLive.query.filter(
+        LapLive.player_id == player_id, LapLive.lap_time.isnot(None)
+    ).count()
+    car = (
+        db.session.query(LapLive.car_model, func.count(LapLive.id))
+        .filter(LapLive.player_id == player_id, LapLive.car_model.isnot(None))
+        .group_by(LapLive.car_model)
+        .order_by(func.count(LapLive.id).desc())
+        .first()
+    )
+    car = car_info(car[0]) if car else car_info(car_model_fallback)
+    track = (
+        db.session.query(Races.piste, func.count(LapLive.id))
+        .join(Races, Races.id == LapLive.race_id)
+        .filter(LapLive.player_id == player_id, LapLive.lap_time.isnot(None))
+        .group_by(Races.piste)
+        .order_by(func.count(LapLive.id).desc())
+        .first()
+    )
+    return {
+        "laps": laps,
+        "car": car,
+        "track": track[0] if track else None,
+    }
+
+
 def annotate_sector_bests(laps):
     """Marque le secteur le plus rapide (hors cut) de la session: lap.best_s1/s2/s3."""
     bests = {"s1": None, "s2": None, "s3": None}
@@ -237,7 +269,8 @@ def register_routes(app):
     @app.route("/drivers")
     def list_drivers():
         drivers = Drivers.query.order_by(Drivers.last_name.asc()).all()
-        return render_template("drivers.html", drivers=drivers)
+        stats = {d.id: driver_stats(d.player_id, d.car_model) for d in drivers}
+        return render_template("drivers.html", drivers=drivers, stats=stats)
 
     @app.route("/driver/<int:driver_id>")
     def driver_profile(driver_id):
@@ -250,7 +283,10 @@ def register_routes(app):
         )
         race_ids = [r[0] for r in participated_race_ids]
         races = Races.query.filter(Races.id.in_(race_ids)).all() if race_ids else []
-        return render_template("driver_detail.html", driver=driver, races=races)
+        stats = driver_stats(driver.player_id, driver.car_model)
+        return render_template(
+            "driver_detail.html", driver=driver, races=races, stats=stats
+        )
 
     @app.route("/servers")
     def list_servers():

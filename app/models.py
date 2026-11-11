@@ -62,6 +62,7 @@ class LapLive(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     player_id = db.Column(db.String(50), nullable=True)
     car_id = db.Column(db.Integer, nullable=False)
+    car_model = db.Column(db.Integer, nullable=True)
     driver_place = db.Column(db.Integer, nullable=False)
     race_id = db.Column(db.Integer, nullable=False)
     lap_time = db.Column(db.Integer, nullable=True)

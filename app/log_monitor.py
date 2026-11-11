@@ -313,6 +313,7 @@ class LogMonitorService(threading.Thread):
             driver = Drivers.query.filter_by(car_id=data["car_id"]).first()
             lap = LapLive(
                 car_id=data["car_id"],
+                car_model=driver.car_model if driver else None,
                 race_id=self.race_id or 0,
                 race_session=self.race_session,
                 driver_place=data["driver_place"],

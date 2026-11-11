@@ -4,14 +4,19 @@
 <h1>Pilotes</h1>
 {% if drivers %}
 <table>
-  <tr><th>Nom</th><th>Steam ID</th><th>N° course</th><th>Car ID</th><th>Modèle</th></tr>
+  <tr><th>Nom</th><th>Tours</th><th>Voiture préférée</th><th>Piste préférée</th></tr>
   {% for d in drivers %}
+  {% set s = stats[d.id] %}
   <tr>
     <td><a href="{{ url_for('driver_profile', driver_id=d.id) }}">{{ d.full_name() }}</a></td>
-    <td>{{ d.player_id }}</td>
-    <td>{{ d.race_number }}</td>
-    <td>{{ d.car_id }}</td>
-    <td>{{ d.car_model }}</td>
+    <td>{{ s.laps }}</td>
+    <td>
+      {% if s.car %}
+      <span class="brand-badge" style="background: {{ s.car.color }}">{{ s.car.brand }}</span>
+      {{ s.car.model }}
+      {% endif %}
+    </td>
+    <td>{{ s.track or '-' }}</td>
   </tr>
   {% endfor %}
 </table>

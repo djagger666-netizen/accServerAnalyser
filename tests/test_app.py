@@ -77,6 +77,26 @@ def test_routes_return_200(client):
         assert resp.status_code == 200, f"{url} -> {resp.status_code}"
 
 
+def test_drivers_page_stats(client, app):
+    html = client.get("/drivers").get_data(as_text=True)
+    # colonnes supprimées
+    for old in ("Steam ID", "N° course", "Car ID", "Modèle"):
+        assert old not in html
+    # nouvelles colonnes: 3 tours accomplis, voiture préférée, piste préférée
+    assert "Tours" in html and "Voiture préférée" in html and "Piste préférée" in html
+    assert "John Doe" in html
+    assert ">3</td>" in html  # 3 tours complets (le split n'est pas un tour)
+    assert "Aston Martin" in html and "V8 Vantage (2019)" in html  # carModel 20
+    assert "monza" in html
+
+    with app.app_context():
+        driver_id = Drivers.query.first().id
+    html_d = client.get(f"/driver/{driver_id}").get_data(as_text=True)
+    assert "Steam ID" not in html_d
+    assert "Tours effectués : <strong>3</strong>" in html_d
+    assert "monza" in html_d
+
+
 def test_race_detail_and_driver_pages(client, app):
     with app.app_context():
         race_id = Races.query.order_by(Races.id.desc()).first().id
