@@ -129,6 +129,40 @@ def test_archived_files_sorted_by_embedded_date(tmp_path):
     ]
 
 
+def test_practice_session_starts_new_weekend(env):
+    # règle: "-> Practice 0" = début d'un nouveau week-end, même sans
+    # "Resetting race weekend" explicite dans le log
+    app, log, logs_dir, tmp_path = env
+    log.write_text(
+        "Session changed: Practice -> Race 0\n" + LINE_LAP +
+        "Session changed: Race -> Practice 0\n" +
+        "Session changed: Practice -> Qualifying 0\n",
+        encoding="utf-8",
+    )
+    m = make_monitor(app, log, tmp_path)
+    with app.app_context():
+        m.tail_file(str(log))
+        assert WeekEnds.query.count() == 2
+        races = Races.query.order_by(Races.id).all()
+        assert [r.race_session for r in races] == ["Race", "Practice", "Qualifying"]
+        assert [r.we_id for r in races] == [1, 2, 2]
+
+
+def test_consecutive_practice_stays_same_weekend(env):
+    app, log, logs_dir, tmp_path = env
+    log.write_text(
+        "Session changed: Race -> Practice 0\n"
+        "Session changed: Race -> Practice 0\n",  # ligne doublée (restart serveur)
+        encoding="utf-8",
+    )
+    m = make_monitor(app, log, tmp_path)
+    with app.app_context():
+        m.tail_file(str(log))
+        assert WeekEnds.query.count() == 1
+        assert Races.query.count() == 2
+        assert all(r.we_id == 1 for r in Races.query.all())
+
+
 def test_restart_does_not_create_empty_weekend(env):
     app, log, logs_dir, tmp_path = env
     log.write_text("Session changed: Practice -> Race 0\n" + LINE_LAP, encoding="utf-8")

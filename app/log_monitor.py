@@ -221,7 +221,11 @@ class LogMonitorService(threading.Thread):
         session = parse_session_change(line)
         if not session:
             return
-        print(f"--> Session : {session}")
+        if session == "Practice" and self.race_session != "Practice":
+            # un Practice marque le début d'un nouveau week-end
+            # (deux Practice consécutifs = même week-end, ex ligne doublée)
+            self.we_id = self.commit_new_weekend()
+        print(f"--> Session : {session} (we={self.we_id})")
         with self.app.app_context():
             race = Races(
                 piste=self.piste or "unknown",
