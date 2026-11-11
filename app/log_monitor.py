@@ -141,9 +141,7 @@ class LogMonitorService(threading.Thread):
                 offset = 0
             for line in lines[offset:]:
                 # date ISO en début de ligne (logs archivés); None pour server.log
-                line_date = parse_line_date(line)
-                if line_date is not None:
-                    self._current_date = line_date
+                self._current_date = parse_line_date(line)
                 self.dispatch_line(line)
             self._state[path] = len(lines)
             self.save_state()
