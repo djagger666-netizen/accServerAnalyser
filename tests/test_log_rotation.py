@@ -5,6 +5,8 @@ import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from datetime import datetime
+
 from app import create_app
 from app.log_monitor import LogMonitorService, log_sort_key
 from app.models import LapLive, Races, WeekEnds
@@ -161,6 +163,30 @@ def test_consecutive_practice_stays_same_weekend(env):
         assert WeekEnds.query.count() == 1
         assert Races.query.count() == 2
         assert all(r.we_id == 1 for r in Races.query.all())
+
+
+def test_line_date_prefix_used_for_archived_logs(env):
+    # la date enregistrée vient du préfixe ISO en début de ligne
+    app, log, logs_dir, tmp_path = env
+    archive = logs_dir / "logs_20260824_181416_1786545622.log"
+    archive.write_text(
+        "2026-08-24T18:14:16.123Z: Session changed: Practice -> Race 0\n"
+        "2026-08-24T18:20:00.000Z: " + LINE_LAP,
+        encoding="utf-8",
+    )
+    m = make_monitor(app, log, tmp_path)
+    m.logs_dir = str(logs_dir)
+    with app.app_context():
+        m.replay_archived_logs()
+        lap = LapLive.query.first()
+        race = Races.query.first()
+        assert lap.date == datetime(2026, 8, 24, 18, 20, 0)
+        assert race.date == datetime(2026, 8, 24, 18, 14, 16, 123000)
+    # server.log live (préfixe en ms, pas de date ISO): date None
+    log.write_text(LINE_LAP, encoding="utf-8")
+    with app.app_context():
+        m.tail_file(str(log))
+        assert LapLive.query.order_by(LapLive.id.desc()).first().date is None
 
 
 def test_restart_does_not_create_empty_weekend(env):

@@ -68,6 +68,9 @@ class LapLive(db.Model):
     lap_time = db.Column(db.Integer, nullable=True)
     race_session = db.Column(db.String(50), nullable=True)
     timestamp_ms = db.Column(db.Float, nullable=False)
+    # date réelle du tour: renseignée depuis le nom du log archivé
+    # (logs_YYYYMMDD_HHMMSS_*.log) à l'import; None pour le server.log live
+    date = db.Column(db.DateTime, nullable=True)
     s1 = db.Column(db.Integer, nullable=True)
     s2 = db.Column(db.Integer, nullable=True)
     s3 = db.Column(db.Integer, nullable=True)

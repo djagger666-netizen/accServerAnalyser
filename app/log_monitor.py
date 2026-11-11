@@ -11,6 +11,7 @@ from .parser import (
     parse_car_connection,
     parse_driver_request,
     parse_lap_line,
+    parse_line_date,
     parse_session_change,
     parse_track_line,
 )
@@ -49,6 +50,7 @@ class LogMonitorService(threading.Thread):
         self.race_session = None
         self.we_id = None
         self.pending_driver_request = None
+        self._current_date = None  # date du log en cours (archivé), None pour server.log
 
         self.load_state()
         self.we_id = self.current_weekend_id()
@@ -138,6 +140,10 @@ class LogMonitorService(threading.Thread):
             if len(lines) < offset:
                 offset = 0
             for line in lines[offset:]:
+                # date ISO en début de ligne (logs archivés); None pour server.log
+                line_date = parse_line_date(line)
+                if line_date is not None:
+                    self._current_date = line_date
                 self.dispatch_line(line)
             self._state[path] = len(lines)
             self.save_state()
@@ -231,6 +237,7 @@ class LogMonitorService(threading.Thread):
                 piste=self.piste or "unknown",
                 we_id=self.we_id,
                 race_session=session,
+                date=self._current_date,  # None pour server.log -> date du jour (défaut)
             )
             self.race_session = session
             db.session.add(race)
@@ -314,6 +321,7 @@ class LogMonitorService(threading.Thread):
             lap = LapLive(
                 car_id=data["car_id"],
                 car_model=driver.car_model if driver else None,
+                date=self._current_date,
                 race_id=self.race_id or 0,
                 race_session=self.race_session,
                 driver_place=data["driver_place"],

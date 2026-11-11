@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 # Ligne de tour du server.log ACC, ex :
 #  carId 5, driverId 1, lapTime 1:35.791, timestampMS 35791.647, flags: 0,
@@ -45,6 +46,18 @@ NEW_CAR_REGEX = re.compile(
 TRACK_REGEX = re.compile(r"Track (?P<piste>[^,]+) was set")
 
 INT32_MAX_MS = 2147483647
+
+# préfixe date ISO en début de ligne des logs (ex: 2026-10-23T11:15:58.0209281Z: ...)
+# absent du server.log live (préfixe en millisecondes) -> None
+LINE_DATE_REGEX = re.compile(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z):")
+
+
+def parse_line_date(line):
+    """Date ISO au début de la ligne, ou None (ex: server.log au format ms)."""
+    m = LINE_DATE_REGEX.match(line.lstrip())
+    if not m:
+        return None
+    return datetime.fromisoformat(m.group(1).replace("Z", "+00:00")).replace(tzinfo=None)
 
 
 def time_to_ms(value):
