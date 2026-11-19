@@ -2,7 +2,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 instance/
+*.log
 *.db
+*.pyc
 .env
 config.local.py
 server_files/
