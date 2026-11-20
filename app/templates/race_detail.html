@@ -10,7 +10,7 @@
 {% if race.drivers %}
 <h2>Pilotes inscrits</h2>
 <ul>
-  {% for d in race.drivers %}<li>{{ d.player_id }} (driver_id {{ d.driver_id }})</li>{% endfor %}
+  {% for d in race.drivers %}<li>{{ d.first_name }} {{ d.last_name }} — {{ d.player_id }} (driver_id {{ d.driver_id }})</li>{% endfor %}
 </ul>
 {% endif %}
 <h2>Tours ({{ results|length }} tours complets)</h2>

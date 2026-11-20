@@ -266,7 +266,13 @@ class LogMonitorService(threading.Thread):
         if "player_id" not in data:
             return
         with self.app.app_context():
-            driver = Drivers.query.filter_by(player_id=data["player_id"]).first()
+            # un même SteamID peut être utilisé avec un nom différent:
+            # l'unicité du pilote = player_id + first_name + last_name
+            driver = Drivers.query.filter_by(
+                player_id=data["player_id"],
+                first_name=data["first_name"],
+                last_name=data["last_name"],
+            ).first()
             if driver:
                 print(f"   >>> MAJ {driver.full_name()}")
                 driver.first_name = data["first_name"]
@@ -292,8 +298,18 @@ class LogMonitorService(threading.Thread):
             race = Races.query.order_by(Races.id.desc()).first()
             if race:
                 drivers = race.drivers or []
-                new_driver = {"player_id": data["player_id"], "driver_id": int(data["driver_id"])}
-                if not any(d.get("player_id") == new_driver["player_id"] for d in drivers):
+                new_driver = {
+                    "player_id": data["player_id"],
+                    "driver_id": int(data["driver_id"]),
+                    "first_name": data["first_name"],
+                    "last_name": data["last_name"],
+                }
+                if not any(
+                    d.get("player_id") == new_driver["player_id"]
+                    and d.get("first_name") == new_driver["first_name"]
+                    and d.get("last_name") == new_driver["last_name"]
+                    for d in drivers
+                ):
                     drivers.append(new_driver)
                     race.drivers = drivers
                     db.session.commit()
@@ -315,7 +331,13 @@ class LogMonitorService(threading.Thread):
         print(f"      newTime[{kind}]: car={data['car_id']} race={self.race_id} "
               f"lap={data['lap_time']}ms cut={data['hasCut']} over={data['sessionOver']}")
         with self.app.app_context():
-            driver = Drivers.query.filter_by(car_id=data["car_id"]).first()
+            # un carId peut être réutilisé par un autre pilote plus tard:
+            # on prend l'inscription la plus récente pour ce car_id
+            driver = (
+                Drivers.query.filter_by(car_id=data["car_id"])
+                .order_by(Drivers.id.desc())
+                .first()
+            )
             lap = LapLive(
                 car_id=data["car_id"],
                 car_model=driver.car_model if driver else None,

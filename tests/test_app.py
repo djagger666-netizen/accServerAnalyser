@@ -216,6 +216,54 @@ def test_new_time_print_shows_sector(app, tmp_path, capsys):
     assert "newTime[tour]" in out
 
 
+def test_same_player_id_different_name_creates_two_drivers(tmp_path):
+    """Un même SteamID connecté avec un nom différent = un pilote distinct;
+    même SteamID + même nom = mise à jour du pilote existant."""
+    log_path = tmp_path / "server.log"
+    log_path.write_text(
+        "Session changed: Practice 0 -> Race 0\n"
+        "New connection request: id 0 John Doe S76561198000000000 on car model 20\n"
+        "Creating new car connection: carId 5, carModel 20, raceNumber #44\n"
+        "New connection request: id 1 Jane Doe S76561198000000000 on car model 21\n"
+        "Creating new car connection: carId 6, carModel 21, raceNumber #45\n"
+        # même player_id + même nom -> update (car_id change), pas de 3e pilote
+        "New connection request: id 2 John Doe S76561198000000000 on car model 22\n"
+        "Creating new car connection: carId 7, carModel 22, raceNumber #46\n",
+        encoding="utf-8",
+    )
+
+    class TestCfg:
+        SECRET_KEY = "test"
+        SQLALCHEMY_DATABASE_URI = "sqlite:///" + str(tmp_path / "test.db")
+        SQLALCHEMY_TRACK_MODIFICATIONS = False
+        ACC_LOG_PATH = str(log_path)
+        ENTRYLIST_PATH = str(tmp_path / "entrylist.json")
+        HOST = "127.0.0.1"
+        PORT = 5000
+
+    application = create_app(TestCfg, start_monitor=False)
+    monitor = LogMonitorService(
+        application, str(log_path), str(tmp_path / "entrylist.json"),
+        state_path=str(tmp_path / "monitor_state.json"),
+    )
+    with application.app_context():
+        monitor.tail_file(str(log_path))
+        assert Drivers.query.count() == 2
+        john = Drivers.query.filter_by(first_name="John", last_name="Doe").first()
+        jane = Drivers.query.filter_by(first_name="Jane", last_name="Doe").first()
+        assert john.player_id == jane.player_id == "76561198000000000"
+        # John a changé de voiture: car_id/race_number/car_model mis à jour
+        assert john.car_id == 7
+        assert john.car_model == 22
+        assert john.race_number == 46
+        assert jane.car_id == 6
+        # la course liste bien les deux pilotes malgré le player_id identique
+        race = Races.query.order_by(Races.id.desc()).first()
+        assert len(race.drivers) == 2
+        names = {(d["first_name"], d["last_name"]) for d in race.drivers}
+        assert names == {("John", "Doe"), ("Jane", "Doe")}
+
+
 def test_live_api_contains_laps(client, app):
     with app.app_context():
         race = Races.query.order_by(Races.id.desc()).first()
