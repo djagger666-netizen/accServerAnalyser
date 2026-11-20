@@ -1,10 +1,24 @@
+import calendar as py_calendar
 import os
+from datetime import datetime
 
 from flask import Flask, jsonify, render_template, request
 
 from .car_models import car_info
 from .extensions import db
 from . import models  # noqa: F401  (enregistre les modèles)
+
+
+MOIS_FR = [
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+]
+
+
+def shift_month(year, month, delta):
+    """Décale un (année, mois) de `delta` mois, ex (2026, 1, -1) -> (2025, 12)."""
+    idx = year * 12 + (month - 1) + delta
+    return idx // 12, idx % 12 + 1
 
 
 def create_app(config_object=None, start_monitor=False):
@@ -131,15 +145,24 @@ def register_routes(app):
     @app.route("/races")
     def list_races():
         piste_filter = request.args.get("piste")
-        month = request.args.get("month")
-        year = request.args.get("year")
+        date_filter = request.args.get("date")
+
+        d = None
+        if date_filter:
+            try:
+                d = datetime.strptime(date_filter, "%Y-%m-%d").date()
+            except ValueError:
+                date_filter = ""
 
         query = Races.query
         if piste_filter:
             query = query.filter(Races.piste == piste_filter)
-        if month and year:
-            query = query.filter(db.extract("month", Races.date) == month)
-            query = query.filter(db.extract("year", Races.date) == year)
+        if d is not None:
+            query = query.filter(
+                db.extract("year", Races.date) == d.year,
+                db.extract("month", Races.date) == d.month,
+                db.extract("day", Races.date) == d.day,
+            )
 
         races = query.order_by(Races.date.desc()).all()
         pistes = [p[0] for p in db.session.query(Races.piste).distinct().all()]
@@ -153,12 +176,79 @@ def register_routes(app):
         by_we = {}
         for r in races:
             by_we.setdefault(r.we_id, []).append(r)
+        # date affichée d'un week-end = date de son 1er événement (1ère course),
+        # calculée sur toutes ses courses (même celles filtrées hors de la liste)
+        we_first_dates = dict(
+            db.session.query(Races.we_id, db.func.min(Races.date))
+            .group_by(Races.we_id)
+            .all()
+        )
         groups = [
-            {"we": WeekEnds.query.get(we_id), "races": by_we[we_id]}
+            {
+                "we": WeekEnds.query.get(we_id),
+                "races": by_we[we_id],
+                "date": we_first_dates.get(we_id),
+            }
             for we_id in sorted(by_we, reverse=True)
             if any(r.id in race_ids_with_laps for r in by_we[we_id])
         ]
-        return render_template("races.html", groups=groups, pistes=pistes)
+
+        # --- calendrier ---
+        # mois affiché: paramètre cal_month ('YYYY-MM'), sinon mois du filtre date,
+        # sinon mois de la course la plus récente
+        cal_param = request.args.get("cal_month")
+        cal_year = cal_month = None
+        if cal_param:
+            try:
+                y, m = (int(x) for x in cal_param.split("-"))
+                if not 1 <= m <= 12:
+                    raise ValueError
+                cal_year, cal_month = y, m
+            except ValueError:
+                cal_param = None
+        if cal_param is None:
+            if d is not None:
+                cal_year, cal_month = d.year, d.month
+            else:
+                last = db.session.query(db.func.max(Races.date)).scalar()
+                if last is not None:
+                    cal_year, cal_month = last.year, last.month
+                else:
+                    now = datetime.utcnow()
+                    cal_year, cal_month = now.year, now.month
+            cal_param = f"{cal_year:04d}-{cal_month:02d}"
+        py, pm = shift_month(cal_year, cal_month, -1)
+        ny, nm = shift_month(cal_year, cal_month, 1)
+        # jours du mois affiché ayant au moins une course -> marqués dans le calendrier
+        race_days = {
+            int(r[0])
+            for r in db.session.query(db.extract("day", Races.date))
+            .filter(
+                db.extract("year", Races.date) == cal_year,
+                db.extract("month", Races.date) == cal_month,
+            )
+            .distinct()
+            .all()
+        }
+        cal_weeks = py_calendar.Calendar(firstweekday=0).monthdayscalendar(
+            cal_year, cal_month
+        )
+
+        return render_template(
+            "races.html",
+            groups=groups,
+            pistes=pistes,
+            piste_filter=piste_filter or "",
+            selected_date=date_filter or "",
+            cal_param=cal_param,
+            cal_year=cal_year,
+            cal_month=cal_month,
+            cal_month_name=MOIS_FR[cal_month - 1],
+            cal_weeks=cal_weeks,
+            race_days=race_days,
+            prev_cal=f"{py:04d}-{pm:02d}",
+            next_cal=f"{ny:04d}-{nm:02d}",
+        )
 
     @app.route("/weekend/<int:we_id>")
     def weekend_detail(we_id):

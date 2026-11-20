@@ -1,37 +1,112 @@
 {% extends "base.html" %}
 {% block title %}Courses - ACC Server Analyser{% endblock %}
+{% block extra_style %}
+<style>
+  h1.page-title { font-size: 1.35rem; margin: 0 0 0.9rem; }
+  .races-layout { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; }
+  .races-main { flex: 1 1 460px; min-width: 0; }
+  form.filters { align-items: center; flex-wrap: wrap; margin-bottom: 1.2rem; }
+  a.reset { font-size: 0.85rem; color: #9aa4b2; }
+  a.reset:hover { color: #ff4d4d; }
+  .we-card { background: #1a1e25; border: 1px solid #2c313a; border-radius: 10px; padding: 0.7rem 1rem 0.9rem; margin-bottom: 1.1rem; }
+  .we-card h2 { margin: 0 0 0.55rem; font-size: 1.02rem; display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .we-card h2 small { color: #9aa4b2; font-weight: 400; font-size: 0.85rem; }
+  .we-card .count { color: #6b7280; font-size: 0.78rem; font-weight: 400; }
+  table.races { margin-top: 0; }
+  table.races th, table.races td { padding: 0.28rem 0.7rem; }
+  table.races tbody tr { transition: background 0.12s; }
+  table.races tbody tr:hover { background: #242a35; }
+  .badge { display: inline-block; border-radius: 999px; padding: 0.14rem 0.65rem; font-size: 0.78rem; font-weight: 600; }
+  .badge-race { background: #4a1f1f; color: #ff9d9d; }
+  .badge-qualifying { background: #1f3a4a; color: #9dd3ff; }
+  .badge-practice { background: #2c313a; color: #c8cdd6; }
+  a.session-link { text-decoration: none; }
+  a.session-link:hover .badge { filter: brightness(1.3); }
+  /* calendrier */
+  .calendar { flex: 0 0 252px; width: 252px; box-sizing: border-box; background: #171a20; border: 1px solid #2c313a; border-radius: 14px; padding: 0.85rem 0.9rem 0.9rem; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.45rem; }
+  .cal-head strong { font-size: 0.95rem; font-weight: 600; }
+  .cal-nav { color: #9aa4b2; text-decoration: none; font-size: 1.15rem; line-height: 1; padding: 0.15rem 0.5rem; border-radius: 6px; }
+  .cal-nav:hover { color: #ff4d4d; background: #2c313a; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+  .cal-weekdays span { color: #6b7280; font-size: 0.7rem; padding: 0.2rem 0; }
+  .cal-day { display: block; padding: 0.3rem 0; border-radius: 8px; font-size: 0.85rem; color: #e8e8e8; text-decoration: none; }
+  a.cal-day:hover { background: #2c313a; }
+  .cal-day.empty { visibility: hidden; }
+  .cal-day.has-race { background: #2c313a; color: #ffffff; font-weight: 700; }
+  .cal-day.selected, a.cal-day.selected:hover { background: #ff4d4d; color: #ffffff; font-weight: 700; }
+  .cal-all { display: block; text-align: center; margin-top: 0.7rem; background: #2c313a; border-radius: 999px; padding: 0.35rem 0; font-size: 0.82rem; color: #e8e8e8; text-decoration: none; }
+  .cal-all:hover { background: #3a4150; }
+</style>
+{% endblock %}
 {% block content %}
-<h1>Historique des courses</h1>
-<form class="filters" method="get" action="{{ url_for('list_races') }}">
-  <select name="piste">
-    <option value="">Toutes les pistes</option>
-    {% for p in pistes %}
-    <option value="{{ p }}" {% if request.args.get('piste') == p %}selected{% endif %}>{{ p }}</option>
+<h1 class="page-title">Historique des courses</h1>
+<div class="races-layout">
+  <div class="races-main">
+    <form class="filters" method="get" action="{{ url_for('list_races') }}">
+      <input type="hidden" name="date" value="{{ selected_date }}">
+      <input type="hidden" name="cal_month" value="{{ cal_param }}">
+      <select name="piste">
+        <option value="">Toutes les pistes</option>
+        {% for p in pistes %}
+        <option value="{{ p }}" {% if piste_filter == p %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Filtrer</button>
+      {% if piste_filter or selected_date %}
+      <a class="reset" href="{{ url_for('list_races') }}">Réinitialiser</a>
+      {% endif %}
+    </form>
+    {% if groups %}
+    {% for g in groups %}
+    <section class="we-card">
+      <h2>
+        <a href="{{ url_for('weekend_detail', we_id=g.we.id) }}">Week-end #{{ g.we.id }}</a>
+        <small>{{ g.date.strftime('%d/%m/%Y %H:%M') if g.date else '' }}</small>
+        <span class="count">{{ g.races|length }} session{{ 's' if g.races|length > 1 }}</span>
+      </h2>
+      <table class="races">
+        <thead><tr><th>Session</th><th>Piste</th></tr></thead>
+        <tbody>
+        {% for r in g.races %}
+        {% set badge_cls = {'Race': 'badge-race', 'Race Completed': 'badge-race', 'Qualifying': 'badge-qualifying', 'Practice': 'badge-practice'}.get(r.race_session, '') %}
+        <tr>
+          <td><a class="session-link" href="{{ url_for('race_detail', race_id=r.id) }}" title="Course #{{ r.id }}"><span class="badge {{ badge_cls }}">{{ r.race_session or '?' }}</span></a></td>
+          <td>{{ r.piste }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
     {% endfor %}
-  </select>
-  <input type="number" name="month" placeholder="Mois" min="1" max="12" value="{{ request.args.get('month', '') }}">
-  <input type="number" name="year" placeholder="Année" value="{{ request.args.get('year', '') }}">
-  <button type="submit">Filtrer</button>
-</form>
-{% if groups %}
-{% for g in groups %}
-<h2>
-  <a href="{{ url_for('weekend_detail', we_id=g.we.id) }}">Week-end #{{ g.we.id }}</a>
-  <small>{{ g.we.date.strftime('%d/%m/%Y %H:%M') if g.we and g.we.date else '' }}</small>
-</h2>
-<table>
-  <tr><th>ID</th><th>Date</th><th>Piste</th><th>Session</th></tr>
-  {% for r in g.races %}
-  <tr>
-    <td><a href="{{ url_for('race_detail', race_id=r.id) }}">{{ r.id }}</a></td>
-    <td>{{ r.date.strftime('%d/%m/%Y %H:%M') if r.date else '' }}</td>
-    <td>{{ r.piste }}</td>
-    <td><span class="badge">{{ r.race_session or '' }}</span></td>
-  </tr>
-  {% endfor %}
-</table>
-{% endfor %}
-{% else %}
-<p>Aucune course enregistrée pour le moment. Le moniteur de log alimentera cette page.</p>
-{% endif %}
+    {% else %}
+    {% if selected_date %}
+    <p>Aucune course le {{ selected_date[8:10] }}/{{ selected_date[5:7] }}/{{ selected_date[0:4] }}.</p>
+    {% else %}
+    <p>Aucune course enregistrée pour le moment. Le moniteur de log alimentera cette page.</p>
+    {% endif %}
+    {% endif %}
+  </div>
+  <aside class="calendar">
+    <div class="cal-head">
+      <a class="cal-nav" title="Mois précédent" href="{{ url_for('list_races') }}?cal_month={{ prev_cal }}{% if selected_date %}&date={{ selected_date }}{% endif %}{% if piste_filter %}&piste={{ piste_filter|urlencode }}{% endif %}">‹</a>
+      <strong>{{ cal_month_name }} {{ cal_year }}</strong>
+      <a class="cal-nav" title="Mois suivant" href="{{ url_for('list_races') }}?cal_month={{ next_cal }}{% if selected_date %}&date={{ selected_date }}{% endif %}{% if piste_filter %}&piste={{ piste_filter|urlencode }}{% endif %}">›</a>
+    </div>
+    <div class="cal-grid cal-weekdays">
+      {% for j in ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'] %}<span>{{ j }}</span>{% endfor %}
+    </div>
+    <div class="cal-grid">
+      {% for week in cal_weeks %}{% for day in week %}
+      {% if day == 0 %}
+      <span class="cal-day empty"></span>
+      {% else %}
+      {% set iso = '%04d-%02d-%02d'|format(cal_year, cal_month, day) %}
+      <a class="cal-day{% if day in race_days %} has-race{% endif %}{% if iso == selected_date %} selected{% endif %}" href="{{ url_for('list_races') }}?date={{ iso }}&cal_month={{ cal_param }}{% if piste_filter %}&piste={{ piste_filter|urlencode }}{% endif %}">{{ day }}</a>
+      {% endif %}
+      {% endfor %}{% endfor %}
+    </div>
+    <a class="cal-all" href="{{ url_for('list_races') }}{% if piste_filter %}?piste={{ piste_filter|urlencode }}{% endif %}">Toutes dates</a>
+  </aside>
+</div>
 {% endblock %}

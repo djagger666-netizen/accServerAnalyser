@@ -24,7 +24,8 @@
     .car-logo { height: 18px; vertical-align: middle; }
     .brand-badge { padding: 0.1rem 0.45rem; border-radius: 4px; color: #fff; font-size: 0.72rem; font-weight: 700; }
     form.filters { display: flex; gap: 1rem; margin-bottom: 1rem; }
-    select, button { background: #1f232b; color: #e8e8e8; border: 1px solid #2c313a; padding: 0.4rem 0.6rem; }
+    select, input, button { background: #1f232b; color: #e8e8e8; border: 1px solid #2c313a; padding: 0.4rem 0.6rem; }
+    {% block extra_style %}{% endblock %}
   </style>
 </head>
 <body>

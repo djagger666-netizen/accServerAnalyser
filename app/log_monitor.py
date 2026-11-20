@@ -248,6 +248,9 @@ class LogMonitorService(threading.Thread):
                 races_id = we.races_id or []
                 races_id.append(self.race_id)
                 we.races_id = races_id
+                if len(races_id) == 1 and race.date is not None:
+                    # date du week-end = date de son 1er événement (1ère course)
+                    we.date = race.date
                 db.session.commit()
                 print(f"we.races_id {we.races_id} du weekend {we.id} a jour")
 

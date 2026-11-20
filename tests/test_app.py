@@ -1,5 +1,7 @@
 import os
+import re
 import sys
+from datetime import datetime
 
 import pytest
 
@@ -131,6 +133,112 @@ def test_races_hides_weekends_without_laps(client, app):
     html = client.get("/races").get_data(as_text=True)
     assert f"Week-end #{empty_we_id}" not in html  # 0 tour -> caché
     assert "Week-end #1" in html  # celui avec des tours reste visible
+
+
+def test_races_filter_by_date_calendar(client, app):
+    """Le filtre 'date' (calendrier) ne garde que les courses du jour choisi."""
+    with app.app_context():
+        we = WeekEnds(races_id=[])
+        db.session.add(we)
+        db.session.commit()
+        r1 = Races(piste="spa", we_id=we.id, race_session="Practice",
+                   date=datetime(2026, 11, 10, 12, 25))
+        r2 = Races(piste="spa", we_id=we.id, race_session="Race",
+                   date=datetime(2026, 11, 11, 18, 0))
+        db.session.add_all([r1, r2])
+        db.session.commit()
+        for r in (r1, r2):
+            db.session.add(LapLive(player_id="76561198000000000", car_id=5,
+                                   driver_place=1, race_id=r.id, lap_time=90000,
+                                   timestamp_ms=1.0, fuel=1.0))
+        db.session.commit()
+        r1_id, r2_id = r1.id, r2.id
+    html = client.get("/races?date=2026-11-10").get_data(as_text=True)
+    assert f"/race/{r1_id}" in html
+    assert f"/race/{r2_id}" not in html
+    html = client.get("/races?date=2026-11-11").get_data(as_text=True)
+    assert f"/race/{r2_id}" in html
+    assert f"/race/{r1_id}" not in html
+    # sans filtre date, tout est affiché
+    html = client.get("/races").get_data(as_text=True)
+    assert f"/race/{r1_id}" in html and f"/race/{r2_id}" in html
+    # calendrier intégré à la page (plus de saisie mois/année ni d'input date natif)
+    assert 'class="calendar"' in html
+    assert "Toutes dates" in html
+    assert 'type="date"' not in html
+    assert 'name="month"' not in html and 'name="year"' not in html
+
+
+def test_races_calendar_marks_race_days(client, app):
+    """Le calendrier affiche le mois demandé, marque les jours avec courses
+    et distingue le jour sélectionné (filtre date)."""
+    with app.app_context():
+        we = WeekEnds(races_id=[])
+        db.session.add(we)
+        db.session.commit()
+        r1 = Races(piste="spa", we_id=we.id, race_session="Practice",
+                   date=datetime(2026, 11, 10, 12, 25))
+        r2 = Races(piste="spa", we_id=we.id, race_session="Race",
+                   date=datetime(2026, 11, 11, 18, 0))
+        db.session.add_all([r1, r2])
+        db.session.commit()
+        for r in (r1, r2):
+            db.session.add(LapLive(player_id="76561198000000000", car_id=5,
+                                   driver_place=1, race_id=r.id, lap_time=90000,
+                                   timestamp_ms=1.0, fuel=1.0))
+        db.session.commit()
+    html = client.get("/races?cal_month=2026-11").get_data(as_text=True)
+    assert "novembre 2026" in html  # titre du mois en français
+    assert re.search(r'class="cal-day has-race"[^>]*>10<', html)
+    assert re.search(r'class="cal-day has-race"[^>]*>11<', html)
+    assert not re.search(r'class="cal-day has-race"[^>]*>12<', html)  # 12: pas de course
+    # navigation mois précédent / suivant
+    assert "cal_month=2026-10" in html and "cal_month=2026-12" in html
+    # jour sélectionné mis en évidence, lien avec date + cal_month
+    html = client.get("/races?cal_month=2026-11&date=2026-11-10").get_data(as_text=True)
+    assert re.search(r'class="cal-day has-race selected"[^>]*>10<', html)
+    assert "date=2026-11-10" in html
+    # "Toutes dates" conserve le filtre piste mais efface la date
+    html = client.get("/races?cal_month=2026-11&date=2026-11-10&piste=spa").get_data(as_text=True)
+    m = re.search(r'class="cal-all" href="([^"]+)"', html)
+    assert m and "date=" not in m.group(1) and "piste=spa" in m.group(1)
+
+
+def test_races_weekend_date_is_first_event(client, app):
+    """La date affichée du week-end = date de son 1er événement (1ère course),
+    pas la date de création du week-end."""
+    with app.app_context():
+        we = WeekEnds(races_id=[], date=datetime(2026, 1, 1, 10, 0))  # date fausse (import)
+        db.session.add(we)
+        db.session.commit()
+        r1 = Races(piste="paul_ricard", we_id=we.id, race_session="Practice",
+                   date=datetime(2026, 11, 10, 12, 25))
+        r2 = Races(piste="paul_ricard", we_id=we.id, race_session="Race",
+                   date=datetime(2026, 11, 10, 14, 0))
+        db.session.add_all([r1, r2])
+        db.session.commit()
+        db.session.add(LapLive(player_id="76561198000000000", car_id=5,
+                               driver_place=1, race_id=r1.id, lap_time=90000,
+                               timestamp_ms=1.0, fuel=1.0))
+        db.session.commit()
+        we_id = we.id
+    html = client.get("/races").get_data(as_text=True)
+    assert f"Week-end #{we_id}" in html
+    assert "10/11/2026 12:25" in html  # date du 1er événement
+    assert "01/01/2026 10:00" not in html  # pas la date de création du week-end
+
+
+def test_races_table_session_links(client, app):
+    """Tableau compact: colonne 'Session' (lien vers /race/<id>), sans colonne ID ni Date."""
+    with app.app_context():
+        race = Races.query.order_by(Races.id.asc()).first()
+        race_id = race.id
+    html = client.get("/races").get_data(as_text=True)
+    assert "<th>Session</th>" in html
+    assert "<th>ID</th>" not in html
+    assert "<th>Date</th>" not in html  # date retirée de chaque ligne
+    # le texte 'Session' reste un lien vers la course (id conservé dans le href)
+    assert f'href="/race/{race_id}"' in html
 
 
 def test_weekend_page_results_and_sessions(client, app):
